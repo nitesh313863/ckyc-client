@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 @Component
 public class MaskingUtil {
 
-    private static final Pattern PAN_PATTERN = Pattern.compile("\\b[A-Z]{5}[0-9]{4}[A-Z]\\b");
+    private static final Pattern PAN_PATTERN = Pattern.compile("\\b[A-Z]{5}[0-9]{4}[A-Z]\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b");
     private static final Pattern MOBILE_PATTERN = Pattern.compile("\\b\\d{10}\\b");
     private static final Pattern IMAGE_DATA_TAG_PATTERN = Pattern.compile("(<IMAGE_DATA>)([^<]+)(</IMAGE_DATA>)");
@@ -28,10 +28,14 @@ public class MaskingUtil {
     }
 
     public String maskPan(String pan) {
-        if (pan == null || pan.length() != 10) {
+        if (pan == null) {
             return pan;
         }
-        return pan.substring(0, 2) + "******" + pan.substring(8);
+        String normalized = pan.trim();
+        if (normalized.length() != 10) {
+            return pan;
+        }
+        return "XXXXXXXX" + normalized.substring(8);
     }
 
     public String maskAadhaar(String aadhaarRaw) {
