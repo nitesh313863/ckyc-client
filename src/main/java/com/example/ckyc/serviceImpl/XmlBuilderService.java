@@ -1,15 +1,12 @@
-package com.example.ckyc.service;
+package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.dto.CkycDownloadRequest;
-import com.example.ckyc.dto.CkycUpdateRequest;
 import com.example.ckyc.dto.CkycUploadRequest;
 import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -106,58 +103,6 @@ public class XmlBuilderService {
         return xml.toString();
     }
 
-    public String buildUpdatePidData(CkycUpdateRequest request, String timestamp) {
-        Map<String, String> personalFields = new LinkedHashMap<>();
-        Map<String, String> identityFields = new LinkedHashMap<>();
-        Map<String, String> imageFields = new LinkedHashMap<>();
-
-        request.getChangedFields().forEach((key, value) -> {
-            if (key == null || key.isBlank() || value == null || value.isBlank()) {
-                return;
-            }
-            if (key.startsWith("PERSONAL_DETAILS.")) {
-                personalFields.put(key.substring("PERSONAL_DETAILS.".length()), value);
-            } else if (key.startsWith("IDENTITY_DETAILS.")) {
-                identityFields.put(key.substring("IDENTITY_DETAILS.".length()), value);
-            } else if (key.startsWith("IMAGE_DETAILS.")) {
-                imageFields.put(key.substring("IMAGE_DETAILS.".length()), value);
-            }
-        });
-
-        StringBuilder xml = new StringBuilder();
-        xml.append("<PID_DATA>")
-                .append(tag("DATE_TIME", timestamp))
-                .append(tag("CKYC_NO", request.getCkycNo()))
-                .append(tag("UPDATE_TYPE", "PARTIAL"));
-
-        if (!personalFields.isEmpty()) {
-            xml.append("<PERSONAL_DETAILS>");
-            for (Map.Entry<String, String> entry : personalFields.entrySet()) {
-                xml.append(tag(safeTagName(entry.getKey()), entry.getValue()));
-            }
-            xml.append("</PERSONAL_DETAILS>");
-        }
-
-        if (!identityFields.isEmpty()) {
-            xml.append("<IDENTITY_DETAILS><IDENTITY>");
-            for (Map.Entry<String, String> entry : identityFields.entrySet()) {
-                xml.append(tag(safeTagName(entry.getKey()), entry.getValue()));
-            }
-            xml.append("</IDENTITY></IDENTITY_DETAILS>");
-        }
-
-        if (!imageFields.isEmpty()) {
-            xml.append("<IMAGE_DETAILS><IMAGE>");
-            for (Map.Entry<String, String> entry : imageFields.entrySet()) {
-                xml.append(tag(safeTagName(entry.getKey()), entry.getValue()));
-            }
-            xml.append("</IMAGE></IMAGE_DETAILS>");
-        }
-
-        xml.append("</PID_DATA>");
-        return xml.toString();
-    }
-
     public String buildEnvelope(
             String fiCode,
             String requestId,
@@ -211,14 +156,4 @@ public class XmlBuilderService {
                 .replace("'", "&apos;");
     }
 
-    private String safeTagName(String value) {
-        if (value == null) {
-            throw new CkycValidationException("Invalid tag name");
-        }
-        String normalized = value.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9_]", "_");
-        if (normalized.isBlank()) {
-            throw new CkycValidationException("Invalid tag name");
-        }
-        return normalized;
-    }
 }

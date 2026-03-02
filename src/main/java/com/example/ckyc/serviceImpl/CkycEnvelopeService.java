@@ -1,4 +1,4 @@
-package com.example.ckyc.service;
+package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.config.CkycProperties;
 import com.example.ckyc.exception.CkycEncryptionException;

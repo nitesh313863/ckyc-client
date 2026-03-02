@@ -1,4 +1,4 @@
-package com.example.ckyc.service;
+package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.exception.CkycUpstreamException;
 import lombok.RequiredArgsConstructor;

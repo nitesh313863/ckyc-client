@@ -1,4 +1,4 @@
-package com.example.ckyc.service;
+package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.util.MaskingUtil;
 import lombok.RequiredArgsConstructor;
