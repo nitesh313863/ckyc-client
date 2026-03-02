@@ -1,6 +1,7 @@
 package com.example.ckyc.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -37,11 +38,15 @@ public class CkycUploadRequest {
         @NotBlank(message = "lastName is mandatory")
         private String lastName;
         @NotBlank(message = "dob is mandatory")
+        @Pattern(regexp = "^\\d{2}-\\d{2}-\\d{4}$", message = "dob must be in dd-MM-yyyy format")
         private String dob;
         @NotBlank(message = "gender is mandatory")
         private String gender;
+        @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "pan must be valid format")
         private String pan;
+        @Pattern(regexp = "^\\d{10}$", message = "mobile must be 10 digits")
         private String mobile;
+        @Email(message = "email must be valid")
         private String email;
     }
 
@@ -75,13 +80,14 @@ public class CkycUploadRequest {
     public static class ImageDetail {
         @NotBlank(message = "imageCode is mandatory")
         @Pattern(
-                regexp = "^(01|02|03|04|05|06|07|08|09|10|70|71)$",
-                message = "imageCode must be one of: 01,02,03,04,05,06,07,08,09,10,70,71"
+                regexp = "^(01|02|03|04|05|06|07|70|71)$",
+                message = "imageCode must be one of: 01,02,03,04,05,06,07,70,71"
         )
          private String imageCode;
         private String imageType;
         @NotBlank(message = "imageData is mandatory")
         private String imageData;
+        @Pattern(regexp = "^(?i)(JPG|JPEG|PNG)$", message = "imageFormat must be JPG, JPEG or PNG")
         private String imageFormat;
         private String sequenceNo;
     }
@@ -92,6 +98,7 @@ public class CkycUploadRequest {
         private String relationType;
         @NotBlank(message = "name is mandatory")
         private String name;
+        @Pattern(regexp = "^\\d{2}-\\d{2}-\\d{4}$", message = "dob must be in dd-MM-yyyy format")
         private String dob;
     }
 }

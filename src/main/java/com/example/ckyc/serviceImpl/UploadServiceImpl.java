@@ -4,6 +4,7 @@ import com.example.ckyc.config.CkycProperties;
 import com.example.ckyc.dto.CkycUploadRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.model.ApiResponse;
+import com.example.ckyc.util.FieldValidationUtil;
 import com.example.ckyc.util.ImageValidationUtil;
 import com.example.ckyc.util.RequestIdGenerator;
 import com.example.ckyc.service.UploadService;
@@ -33,6 +34,7 @@ public class UploadServiceImpl implements UploadService {
     private final RequestIdGenerator requestIdGenerator;
     private final AuditService auditService;
     private final ImageValidationUtil imageValidationUtil;
+    private final FieldValidationUtil fieldValidationUtil;
 
     @Override
     public ApiResponse<Map<String, Object>> upload(CkycUploadRequest request) {
@@ -41,6 +43,7 @@ public class UploadServiceImpl implements UploadService {
                     "CKYC upload via API is not enabled. As per CKYC public docs, upload/update are SFTP-driven flows."
             );
         }
+        fieldValidationUtil.validateUploadRequest(request);
         imageValidationUtil.validateUploadRequest(request);
         String requestId = requestIdGenerator.nextRequestId();
         log.info("Preparing CKYC upload request requestId={}", requestId);

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Component
@@ -15,10 +16,11 @@ import java.util.Set;
 public class ImageValidationUtil {
 
     private static final Set<String> ALLOWED_IMAGE_CODES = Set.of(
-            "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "70", "71"
+            "01", "02", "03", "04", "05", "06", "07", "70", "71"
     );
 
     private final CkycProperties ckycProperties;
+    private final SignatureImageValidator signatureImageValidator;
 
     public void validateUploadRequest(CkycUploadRequest request) {
         if (request.getIdentityDetails() == null || request.getIdentityDetails().isEmpty()) {
@@ -33,6 +35,7 @@ public class ImageValidationUtil {
 
         Set<String> seenCodes = new HashSet<>();
         boolean photographPresent = false;
+        boolean signaturePresent = false;
         for (int i = 0; i < request.getImageDetails().size(); i++) {
             CkycUploadRequest.ImageDetail image = request.getImageDetails().get(i);
             if (image == null) {
@@ -45,12 +48,20 @@ public class ImageValidationUtil {
                 throw new CkycValidationException("Duplicate imageCode not allowed: " + code);
             }
             validateBase64AndSize(image.getImageData(), "imageDetails[" + i + "].imageData");
+            validateImageFormat(image.getImageData(), image.getImageFormat(), "imageDetails[" + i + "]");
             if ("70".equals(code)) {
                 photographPresent = true;
+            }
+            if ("71".equals(code)) {
+                signaturePresent = true;
+                signatureImageValidator.validate(image.getImageData(), image.getImageFormat(), "imageDetails[" + i + "]");
             }
         }
         if (!photographPresent) {
             throw new CkycValidationException("Photograph imageCode 70 is mandatory for upload");
+        }
+        if (!signaturePresent) {
+            throw new CkycValidationException("Signature imageCode 71 is mandatory for upload");
         }
     }
 
@@ -69,6 +80,10 @@ public class ImageValidationUtil {
                 throw new CkycValidationException("Duplicate imageCode not allowed: " + image.imageCode());
             }
             validateBase64AndSize(image.imageData(), "imageList[" + i + "].imageData");
+            validateImageFormat(image.imageData(), image.imageFormat(), "imageList[" + i + "]");
+            if ("71".equals(image.imageCode())) {
+                signatureImageValidator.validate(image.imageData(), image.imageFormat(), "imageList[" + i + "]");
+            }
         }
     }
 
@@ -76,9 +91,10 @@ public class ImageValidationUtil {
         if (code == null || code.isBlank()) {
             throw new CkycValidationException(field + " is mandatory");
         }
-        if (!ALLOWED_IMAGE_CODES.contains(code)) {
+        String normalized = code.trim();
+        if (!ALLOWED_IMAGE_CODES.contains(normalized)) {
             throw new CkycValidationException(
-                    "Invalid imageCode " + code + ". Allowed values: 01,02,03,04,05,06,07,08,09,10,70,71"
+                    "Invalid imageCode " + code + ". Allowed values: 01,02,03,04,05,06,07,70,71"
             );
         }
     }
@@ -89,7 +105,7 @@ public class ImageValidationUtil {
         }
         byte[] decoded;
         try {
-            decoded = java.util.Base64.getDecoder().decode(data);
+            decoded = java.util.Base64.getDecoder().decode(stripDataUriPrefix(data));
         } catch (IllegalArgumentException ex) {
             throw new CkycValidationException(field + " must be valid Base64");
         }
@@ -102,5 +118,51 @@ public class ImageValidationUtil {
                     field + " size exceeded. Max allowed bytes: " + maxImageBytes
             );
         }
+    }
+
+    private void validateImageFormat(String imageData, String imageFormat, String fieldPrefix) {
+        String resolvedFormat = resolveImageFormat(imageData, imageFormat);
+        if (resolvedFormat == null || resolvedFormat.isBlank()) {
+            throw new CkycValidationException(fieldPrefix + ".imageFormat is mandatory and must be JPG/JPEG/PNG");
+        }
+        Set<String> allowedFormats = ckycProperties.getUpload().getAllowedImageFormats()
+                .stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toSet());
+        if (allowedFormats.isEmpty()) {
+            allowedFormats = Set.of("JPG", "JPEG", "PNG");
+        }
+        if (!allowedFormats.contains(resolvedFormat)) {
+            throw new CkycValidationException(fieldPrefix + ".imageFormat must be one of " + allowedFormats);
+        }
+    }
+
+    private String resolveImageFormat(String imageData, String imageFormat) {
+        if (imageFormat != null && !imageFormat.isBlank()) {
+            return imageFormat.trim().toUpperCase(Locale.ROOT);
+        }
+        if (imageData == null) {
+            return null;
+        }
+        String lower = imageData.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("data:image/jpeg;base64,")) {
+            return "JPEG";
+        }
+        if (lower.startsWith("data:image/jpg;base64,")) {
+            return "JPG";
+        }
+        if (lower.startsWith("data:image/png;base64,")) {
+            return "PNG";
+        }
+        return null;
+    }
+
+    private String stripDataUriPrefix(String data) {
+        int commaIndex = data.indexOf(',');
+        if (commaIndex > -1 && data.substring(0, commaIndex).contains("base64")) {
+            return data.substring(commaIndex + 1);
+        }
+        return data;
     }
 }

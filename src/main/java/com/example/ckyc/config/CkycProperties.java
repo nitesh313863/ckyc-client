@@ -31,6 +31,7 @@ public class CkycProperties {
     private Retry retry = new Retry();
     private Download download = new Download();
     private Upload upload = new Upload();
+    private Validation validation = new Validation();
     private Logging logging = new Logging();
 
     @Data
@@ -56,6 +57,12 @@ public class CkycProperties {
     public static class Upload {
         private List<String> duplicateKeywords = new ArrayList<>(List.of("DUPLICATE", "ALREADY EXISTS"));
         private int maxImageBytes = 1_048_576;
+        private List<String> allowedImageFormats = new ArrayList<>(List.of("JPG", "JPEG", "PNG"));
+    }
+
+    @Data
+    public static class Validation {
+        private int ckycNoLength = 14;
     }
 
     @Data

@@ -5,6 +5,7 @@ import com.example.ckyc.dto.CkycDownloadRequest;
 import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.model.ApiResponse;
+import com.example.ckyc.util.FieldValidationUtil;
 import com.example.ckyc.util.RequestIdGenerator;
 import com.example.ckyc.service.DownloadService;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,11 @@ public class DownloadServiceImpl implements DownloadService {
     private final CkycResponseService ckycResponseService;
     private final RequestIdGenerator requestIdGenerator;
     private final AuditService auditService;
+    private final FieldValidationUtil fieldValidationUtil;
 
     @Override
     public ApiResponse<Map<String, Object>> download(CkycDownloadRequest request) {
+        fieldValidationUtil.validateDownloadRequest(request);
         String requestId = requestIdGenerator.nextRequestId();
         log.info("Preparing CKYC download request requestId={}", requestId);
 

@@ -30,6 +30,12 @@ ckyc:
       - ALREADY EXISTS
       - RECORD EXISTS
     max-image-bytes: 1048576
+    allowed-image-formats:
+      - JPG
+      - JPEG
+      - PNG
+  validation:
+    ckyc-no-length: 14
   logging:
     max-payload-length: 2000
 server:

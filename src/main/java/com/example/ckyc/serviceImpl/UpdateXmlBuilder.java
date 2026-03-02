@@ -23,6 +23,7 @@ public class UpdateXmlBuilder {
 
         appendPersonalDetails(xml, request.getPersonalDetails());
         appendIdentityList(xml, request.getIdentityList());
+        appendAddressDetails(xml, request.getAddressDetails());
         appendImageList(xml, images);
 
         xml.append("</PID_DATA>");
@@ -78,8 +79,8 @@ public class UpdateXmlBuilder {
                 continue;
             }
             StringBuilder item = new StringBuilder();
-            item.append(tag("ID_TYPE", identity.getIdType()));
-            item.append(tag("ID_NUMBER", identity.getIdNumber()));
+            item.append(tag("IDENTITY_TYPE", identity.getIdType()));
+            item.append(tag("IDENTITY_NUMBER", identity.getIdNumber()));
             item.append(tag("ISSUE_DATE", identity.getIssueDate()));
             item.append(tag("EXPIRY_DATE", identity.getExpiryDate()));
             if (!item.isEmpty()) {
@@ -88,6 +89,28 @@ public class UpdateXmlBuilder {
         }
         if (!section.isEmpty()) {
             xml.append("<IDENTITY_DETAILS>").append(section).append("</IDENTITY_DETAILS>");
+        }
+    }
+
+    private void appendAddressDetails(StringBuilder xml, CkycUpdateRequestDto.AddressDetails details) {
+        if (details == null) {
+            return;
+        }
+        StringBuilder item = new StringBuilder();
+        item.append(tag("ADDRESS_TYPE", details.getAddressType()));
+        item.append(tag("LINE1", details.getLine1()));
+        item.append(tag("LINE2", details.getLine2()));
+        item.append(tag("CITY", details.getCity()));
+        item.append(tag("DISTRICT", details.getDistrict()));
+        item.append(tag("STATE", details.getState()));
+        item.append(tag("PIN_CODE", details.getPinCode()));
+        item.append(tag("COUNTRY", details.getCountry()));
+        if (!item.isEmpty()) {
+            xml.append("<ADDRESS_DETAILS>")
+                    .append("<ADDRESS_DETAIL>")
+                    .append(item)
+                    .append("</ADDRESS_DETAIL>")
+                    .append("</ADDRESS_DETAILS>");
         }
     }
 

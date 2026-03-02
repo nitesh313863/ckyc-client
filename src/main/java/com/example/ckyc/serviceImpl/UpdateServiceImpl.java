@@ -13,6 +13,7 @@ import com.example.ckyc.util.ImageValidationUtil;
 import com.example.ckyc.util.KeyLoaderUtil;
 import com.example.ckyc.util.MaskingUtil;
 import com.example.ckyc.util.RequestIdGenerator;
+import com.example.ckyc.util.FieldValidationUtil;
 import com.example.ckyc.util.XmlHelper;
 import com.example.ckyc.util.XmlUtil;
 import com.example.ckyc.service.UpdateService;
@@ -48,6 +49,7 @@ public class UpdateServiceImpl implements UpdateService {
     private final ImageMapperUtil imageMapperUtil;
     private final ImageValidationUtil imageValidationUtil;
     private final MaskingUtil maskingUtil;
+    private final FieldValidationUtil fieldValidationUtil;
 
     @Override
     public CkycUpdateResponseDto update(CkycUpdateRequestDto request) {
@@ -72,29 +74,34 @@ public class UpdateServiceImpl implements UpdateService {
         String rawResponse = ckycApiClient.postXml(ckycProperties.getUpdateUrl(), signedXml, requestId, OPERATION_UPDATE);
 
         Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_UPDATE);
-        String error = value(processed.get("error"));
+        String error = firstNonBlank(value(processed.get("errorDesc")), value(processed.get("error")));
         String errorCode = value(processed.get("errorCode"));
+        String responseStatus = value(processed.get("status"));
+        String responseCkycNo = firstNonBlank(value(processed.get("ckycNo")), request.getCkycNo());
 
         if (isDuplicate(error, errorCode)) {
             auditService.record(OPERATION_UPDATE, requestId, "DUPLICATE", error);
             return CkycUpdateResponseDto.builder()
                     .status("DUPLICATE")
                     .message("Duplicate update attempt")
-                    .ckycNo(request.getCkycNo())
+                    .ckycNo(responseCkycNo)
                     .updateType(request.getUpdateType().toUpperCase(Locale.ROOT))
                     .errorCode(errorCode == null || errorCode.isBlank() ? "DUPLICATE_UPDATE" : errorCode)
                     .build();
         }
 
-        if (error != null && !error.isBlank()) {
-            throw new CkycUpstreamException(error, 502, false, rawResponse);
+        if (!isSuccessStatus(responseStatus)) {
+            String upstreamMessage = (error == null || error.isBlank())
+                    ? "CKYC update rejected with status: " + responseStatus
+                    : error;
+            throw new CkycUpstreamException(upstreamMessage, 502, false, rawResponse);
         }
 
         auditService.record(OPERATION_UPDATE, requestId, "SUCCESS", "update completed");
         return CkycUpdateResponseDto.builder()
                 .status("SUCCESS")
                 .message("CKYC update successful")
-                .ckycNo(request.getCkycNo())
+                .ckycNo(responseCkycNo)
                 .updateType(request.getUpdateType().toUpperCase(Locale.ROOT))
                 .errorCode(errorCode)
                 .build();
@@ -151,12 +158,7 @@ public class UpdateServiceImpl implements UpdateService {
     }
 
     private void validateRequest(CkycUpdateRequestDto request) {
-        if (request == null) {
-            throw new CkycValidationException("Request body is mandatory");
-        }
-        if (request.getCkycNo() == null || request.getCkycNo().isBlank()) {
-            throw new CkycValidationException("Missing CKYC_NO");
-        }
+        fieldValidationUtil.validateUpdateRequest(request);
         if (request.getUpdateType() == null || request.getUpdateType().isBlank()) {
             throw new CkycValidationException("updateType is mandatory");
         }
@@ -164,13 +166,14 @@ public class UpdateServiceImpl implements UpdateService {
         if (!"FULL".equals(updateType) && !"PARTIAL".equals(updateType)) {
             throw new CkycValidationException("updateType must be FULL or PARTIAL");
         }
-        if ("PARTIAL".equals(updateType) && !hasAnyUpdateSection(request)) {
-            throw new CkycValidationException("For PARTIAL update, at least one section must be provided");
+        if (!hasAnyUpdateSection(request)) {
+            throw new CkycValidationException("At least one update section must be provided");
         }
     }
 
     private boolean hasAnyUpdateSection(CkycUpdateRequestDto request) {
         return request.getPersonalDetails() != null
+                || request.getAddressDetails() != null
                 || (request.getIdentityList() != null && !request.getIdentityList().isEmpty())
                 || (request.getImageList() != null && !request.getImageList().isEmpty());
     }
@@ -183,5 +186,20 @@ public class UpdateServiceImpl implements UpdateService {
 
     private String value(Object input) {
         return input == null ? null : input.toString();
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second;
+    }
+
+    private boolean isSuccessStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return true;
+        }
+        String normalized = status.trim().toUpperCase(Locale.ROOT);
+        return "SUCCESS".equals(normalized) || "S".equals(normalized) || "0".equals(normalized);
     }
 }

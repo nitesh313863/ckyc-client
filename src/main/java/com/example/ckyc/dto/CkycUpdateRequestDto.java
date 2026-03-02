@@ -13,6 +13,7 @@ import java.util.List;
 public class CkycUpdateRequestDto {
 
     @NotBlank(message = "ckycNo is mandatory")
+    @Pattern(regexp = "^\\d{14}$", message = "ckycNo must be numeric and 14 digits")
     private String ckycNo;
 
     @NotBlank(message = "updateType is mandatory")
@@ -76,12 +77,13 @@ public class CkycUpdateRequestDto {
     public static class ImageDetails {
         @NotBlank(message = "imageCode is mandatory")
         @Pattern(
-                regexp = "^(01|02|03|04|05|06|07|08|09|10|70|71)$",
-                message = "imageCode must be one of: 01,02,03,04,05,06,07,08,09,10,70,71"
+                regexp = "^(01|02|03|04|05|06|07|70|71)$",
+                message = "imageCode must be one of: 01,02,03,04,05,06,07,70,71"
         )
         private String imageCode;
         @NotBlank(message = "imageData is mandatory")
         private String imageData;
+        @Pattern(regexp = "^(?i)(JPG|JPEG|PNG)$", message = "imageFormat must be JPG, JPEG or PNG")
         private String imageFormat;
     }
 

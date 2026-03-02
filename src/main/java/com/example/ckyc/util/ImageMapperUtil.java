@@ -4,13 +4,14 @@ import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.exception.CkycValidationException;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
 import java.util.Set;
 
 @Component
 public class ImageMapperUtil {
 
     private static final Set<String> VALID_IMAGE_CODES = Set.of(
-            "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "70", "71"
+            "01", "02", "03", "04", "05", "06", "07", "70", "71"
     );
 
     public NormalizedImage normalize(CkycUpdateRequestDto.ImageDetails image) {
@@ -21,7 +22,7 @@ public class ImageMapperUtil {
         String resolvedCode = resolveImageCode(image.getImageCode());
         if (!VALID_IMAGE_CODES.contains(resolvedCode)) {
             throw new CkycValidationException(
-                    "Invalid image code: " + resolvedCode + ". Allowed values: 01,02,03,04,05,06,07,08,09,10,70,71"
+                    "Invalid image code: " + resolvedCode + ". Allowed values: 01,02,03,04,05,06,07,70,71"
             );
         }
 
@@ -29,7 +30,7 @@ public class ImageMapperUtil {
         if (imageData == null || imageData.isBlank()) {
             throw new CkycValidationException("Image data is mandatory for image code: " + resolvedCode);
         }
-        return new NormalizedImage(resolvedCode, imageData, image.getImageFormat());
+        return new NormalizedImage(resolvedCode, imageData, normalizeFormat(image.getImageFormat()));
     }
 
     private String resolveImageCode(String imageCode) {
@@ -44,6 +45,13 @@ public class ImageMapperUtil {
             return imageData.trim();
         }
         return null;
+    }
+
+    private String normalizeFormat(String imageFormat) {
+        if (imageFormat == null || imageFormat.isBlank()) {
+            return null;
+        }
+        return imageFormat.trim().toUpperCase(Locale.ROOT);
     }
 
     public record NormalizedImage(String imageCode, String imageData, String imageFormat) {
