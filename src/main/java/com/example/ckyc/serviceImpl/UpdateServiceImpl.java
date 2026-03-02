@@ -1,4 +1,4 @@
-package com.example.ckyc.service;
+package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.config.CkycProperties;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
@@ -15,6 +15,7 @@ import com.example.ckyc.util.MaskingUtil;
 import com.example.ckyc.util.RequestIdGenerator;
 import com.example.ckyc.util.XmlHelper;
 import com.example.ckyc.util.XmlUtil;
+import com.example.ckyc.service.UpdateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

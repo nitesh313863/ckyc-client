@@ -6,9 +6,9 @@ import com.example.ckyc.dto.CkycUploadRequest;
 import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycException;
 import com.example.ckyc.model.ApiResponse;
-import com.example.ckyc.service.CkycApiClient;
-import com.example.ckyc.service.CkycResponseService;
-import com.example.ckyc.service.CkycService;
+import com.example.ckyc.serviceImpl.CkycApiClient;
+import com.example.ckyc.serviceImpl.CkycResponseService;
+import com.example.ckyc.serviceImpl.CkycService;
 import com.example.ckyc.service.DownloadService;
 import com.example.ckyc.service.UploadService;
 import jakarta.validation.Valid;
@@ -67,6 +67,7 @@ public class CkycController {
 
     @PostMapping("/download")
     public ResponseEntity<ApiResponse<Map<String, Object>>> download(@Valid @RequestBody CkycDownloadRequest request) {
+        log.info("Received CKYC download request ckycNo={} authFactorType={}", request.getCkycNo(), request.getAuthFactorType());
         return ResponseEntity.ok(downloadService.download(request));
     }
 
@@ -74,11 +75,17 @@ public class CkycController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> validateOtp(
             @Valid @RequestBody CkycValidateOtpRequest request
     ) {
+        log.info("Received CKYC validate-otp request ckycNo={}", request.getCkycNo());
         return ResponseEntity.ok(downloadService.validateOtp(request));
     }
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<Map<String, Object>>> upload(@Valid @RequestBody CkycUploadRequest request) {
+        int imageCount = request.getImageDetails() == null ? 0 : request.getImageDetails().size();
+        log.info("Received CKYC upload request identityCount={} addressCount={} imageCount={}",
+                request.getIdentityDetails() == null ? 0 : request.getIdentityDetails().size(),
+                request.getAddressDetails() == null ? 0 : request.getAddressDetails().size(),
+                imageCount);
         return ResponseEntity.ok(uploadService.upload(request));
     }
 
