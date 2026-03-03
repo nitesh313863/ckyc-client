@@ -2,11 +2,15 @@ package com.example.ckyc.util;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 
 public class KeyLoaderUtil {
 
@@ -25,12 +29,36 @@ public class KeyLoaderUtil {
         return (PrivateKey) ks.getKey(alias, password.toCharArray());
     }
 
+    public static PrivateKey loadPrivateKeyFromPem(String path) throws Exception {
+        byte[] raw;
+        try (InputStream is = open(path)) {
+            raw = is.readAllBytes();
+        }
+        String pem = new String(raw, StandardCharsets.UTF_8);
+        String base64 = pem
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] decoded = Base64.getDecoder().decode(base64);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return keyFactory.generatePrivate(keySpec);
+    }
+
     public static X509Certificate loadCertificateFromPKCS12(String path, String password, String alias) throws Exception {
         KeyStore ks = KeyStore.getInstance("PKCS12");
         try (InputStream is = open(path)) {
             ks.load(is, password.toCharArray());
         }
         return (X509Certificate) ks.getCertificate(alias);
+    }
+
+    public static X509Certificate loadCertificateFromCer(String path) throws Exception {
+        try (InputStream fis = open(path)) {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Certificate cert = cf.generateCertificate(fis);
+            return (X509Certificate) cert;
+        }
     }
 
     private static InputStream open(String path) throws Exception {

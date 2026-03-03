@@ -83,7 +83,7 @@ public class CkycUpdateRequestDto {
         private String imageCode;
         @NotBlank(message = "imageData is mandatory")
         private String imageData;
-        @Pattern(regexp = "^(?i)(JPG|JPEG|PNG)$", message = "imageFormat must be JPG, JPEG or PNG")
+        @Pattern(regexp = "^(?i)(JPG|JPEG|TIF|TIFF|PDF)$", message = "imageFormat must be JPG, JPEG, TIF, TIFF or PDF")
         private String imageFormat;
     }
 

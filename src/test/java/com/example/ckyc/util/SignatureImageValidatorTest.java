@@ -24,7 +24,7 @@ class SignatureImageValidatorTest {
 
     @Test
     void validate_shouldPass_forValidSignatureImage() {
-        assertDoesNotThrow(() -> signatureImageValidator.validate(base64("signature-content"), "PNG", "imageList[0]"));
+        assertDoesNotThrow(() -> signatureImageValidator.validate(base64("signature-content"), "JPG", "imageList[0]"));
     }
 
     @Test
@@ -44,7 +44,7 @@ class SignatureImageValidatorTest {
         properties.getUpload().setMaxImageBytes(3);
         SignatureImageValidator localValidator = new SignatureImageValidator(properties);
 
-        assertThrows(CkycValidationException.class, () -> localValidator.validate(base64("123456789"), "PNG", "imageList[0]"));
+        assertThrows(CkycValidationException.class, () -> localValidator.validate(base64("123456789"), "JPG", "imageList[0]"));
     }
 
     private String base64(String input) {

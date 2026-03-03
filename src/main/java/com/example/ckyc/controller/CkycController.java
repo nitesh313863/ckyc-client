@@ -11,6 +11,7 @@ import com.example.ckyc.serviceImpl.CkycResponseService;
 import com.example.ckyc.serviceImpl.CkycService;
 import com.example.ckyc.service.DownloadService;
 import com.example.ckyc.service.UploadService;
+import com.example.ckyc.util.MaskingUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class CkycController {
     private final CkycProperties ckycProperties;
     private final DownloadService downloadService;
     private final UploadService uploadService;
+    private final MaskingUtil maskingUtil;
 
     @PostMapping("/search")
     public ResponseEntity<Map<String, Object>> search(@RequestParam String idType,
@@ -67,7 +69,11 @@ public class CkycController {
 
     @PostMapping("/download")
     public ResponseEntity<ApiResponse<Map<String, Object>>> download(@Valid @RequestBody CkycDownloadRequest request) {
-        log.info("Received CKYC download request ckycNo={} authFactorType={}", request.getCkycNo(), request.getAuthFactorType());
+        log.info(
+                "Received CKYC download request ckycNo={} authFactorType={}",
+                maskingUtil.maskSensitive(request.getCkycNo()),
+                request.getAuthFactorType()
+        );
         return ResponseEntity.ok(downloadService.download(request));
     }
 
@@ -75,7 +81,7 @@ public class CkycController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> validateOtp(
             @Valid @RequestBody CkycValidateOtpRequest request
     ) {
-        log.info("Received CKYC validate-otp request ckycNo={}", request.getCkycNo());
+        log.info("Received CKYC validate-otp request ckycNo={}", maskingUtil.maskSensitive(request.getCkycNo()));
         return ResponseEntity.ok(downloadService.validateOtp(request));
     }
 

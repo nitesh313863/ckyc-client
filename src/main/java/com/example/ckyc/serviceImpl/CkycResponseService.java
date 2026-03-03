@@ -35,7 +35,7 @@ public class CkycResponseService {
         try {
             log.info("Processing CKYC response operation={} requestId={}", operation, requestId);
             Document responseDoc = XmlHelper.parse(xmlResponse);
-            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(ckycProperties.getCersaiCert());
+            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(resolveCkycPublicCertPath());
             boolean signatureValid = XmlUtil.verifyXmlSignature(responseDoc, cersaiPublicKey);
             log.info("CKYC response signature validation operation={} requestId={} result={}", operation, requestId, signatureValid);
             auditService.record(operation, requestId, "SIGNATURE_VALIDATION", "valid=" + signatureValid);
@@ -74,11 +74,7 @@ public class CkycResponseService {
             if (encryptedSessionKey != null && !encryptedSessionKey.isBlank()
                     && encryptedPid != null && !encryptedPid.isBlank()) {
                 try {
-                    PrivateKey privateKey = KeyLoaderUtil.loadPrivateKeyFromPKCS12(
-                            ckycProperties.getP12Path(),
-                            ckycProperties.getP12Password(),
-                            ckycProperties.getP12Alias()
-                    );
+                    PrivateKey privateKey = loadProjectPrivateKey();
                     byte[] sessionKey = CryptoUtil.decryptRSA(encryptedSessionKey, privateKey);
                     decryptedPidData = CryptoUtil.decryptAES(encryptedPid, sessionKey);
                 } catch (Exception ex) {
@@ -175,5 +171,26 @@ public class CkycResponseService {
             log.warn("Unable to parse decrypted PID fields from CKYC response");
             return Map.of();
         }
+    }
+
+    private String resolveCkycPublicCertPath() {
+        return hasText(ckycProperties.getCkycPublicKeyPath())
+                ? ckycProperties.getCkycPublicKeyPath()
+                : ckycProperties.getCersaiCert();
+    }
+
+    private PrivateKey loadProjectPrivateKey() throws Exception {
+        if (hasText(ckycProperties.getProjectPrivateKeyPath())) {
+            return KeyLoaderUtil.loadPrivateKeyFromPem(ckycProperties.getProjectPrivateKeyPath());
+        }
+        return KeyLoaderUtil.loadPrivateKeyFromPKCS12(
+                ckycProperties.getP12Path(),
+                ckycProperties.getP12Password(),
+                ckycProperties.getP12Alias()
+        );
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

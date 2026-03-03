@@ -29,7 +29,7 @@ public class CkycEnvelopeService {
         try {
             sessionKey = CryptoUtil.generateSessionKey();
             encryptedPid = CryptoUtil.encryptAES(pidData, sessionKey);
-            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(ckycProperties.getCersaiCert());
+            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(resolveCkycPublicCertPath());
             encryptedSessionKey = CryptoUtil.encryptRSA(sessionKey, cersaiPublicKey);
         } catch (Exception ex) {
             throw new CkycEncryptionException("Failed to encrypt CKYC request payload", ex);
@@ -45,16 +45,8 @@ public class CkycEnvelopeService {
         );
 
         try {
-            PrivateKey privateKey = KeyLoaderUtil.loadPrivateKeyFromPKCS12(
-                    ckycProperties.getP12Path(),
-                    ckycProperties.getP12Password(),
-                    ckycProperties.getP12Alias()
-            );
-            X509Certificate cert = KeyLoaderUtil.loadCertificateFromPKCS12(
-                    ckycProperties.getP12Path(),
-                    ckycProperties.getP12Password(),
-                    ckycProperties.getP12Alias()
-            );
+            PrivateKey privateKey = loadProjectPrivateKey();
+            X509Certificate cert = loadProjectCertificate();
 
             Document document = XmlHelper.parse(unsignedXml);
             XmlUtil.signXml(document, privateKey, cert);
@@ -62,5 +54,37 @@ public class CkycEnvelopeService {
         } catch (Exception ex) {
             throw new CkycSignatureException("Failed to sign CKYC request payload", ex);
         }
+    }
+
+    private String resolveCkycPublicCertPath() {
+        return hasText(ckycProperties.getCkycPublicKeyPath())
+                ? ckycProperties.getCkycPublicKeyPath()
+                : ckycProperties.getCersaiCert();
+    }
+
+    private PrivateKey loadProjectPrivateKey() throws Exception {
+        if (hasText(ckycProperties.getProjectPrivateKeyPath())) {
+            return KeyLoaderUtil.loadPrivateKeyFromPem(ckycProperties.getProjectPrivateKeyPath());
+        }
+        return KeyLoaderUtil.loadPrivateKeyFromPKCS12(
+                ckycProperties.getP12Path(),
+                ckycProperties.getP12Password(),
+                ckycProperties.getP12Alias()
+        );
+    }
+
+    private X509Certificate loadProjectCertificate() throws Exception {
+        if (hasText(ckycProperties.getProjectPublicKeyPath())) {
+            return KeyLoaderUtil.loadCertificateFromCer(ckycProperties.getProjectPublicKeyPath());
+        }
+        return KeyLoaderUtil.loadCertificateFromPKCS12(
+                ckycProperties.getP12Path(),
+                ckycProperties.getP12Password(),
+                ckycProperties.getP12Alias()
+        );
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

@@ -25,6 +25,10 @@ public class CkycProperties {
     private String p12Path;
     private String p12Password;
     private String p12Alias;
+    private String projectPublicKeyPath;
+    private String projectPrivateKeyPath;
+    private String ckycPublicKeyPath;
+    private String ckycPrivateKeyPath;
     private boolean allowNonStandardUploadUpdateApi = false;
 
     private Timeout timeout = new Timeout();
@@ -56,8 +60,9 @@ public class CkycProperties {
     @Data
     public static class Upload {
         private List<String> duplicateKeywords = new ArrayList<>(List.of("DUPLICATE", "ALREADY EXISTS"));
-        private int maxImageBytes = 1_048_576;
-        private List<String> allowedImageFormats = new ArrayList<>(List.of("JPG", "JPEG", "PNG"));
+        private int maxImageBytes = 358_400;
+        private int maxPhotoBytes = 51_200;
+        private List<String> allowedImageFormats = new ArrayList<>(List.of("TIF", "TIFF", "PDF", "JPEG", "JPG"));
     }
 
     @Data

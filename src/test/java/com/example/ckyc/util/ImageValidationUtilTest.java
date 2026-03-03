@@ -81,7 +81,7 @@ class ImageValidationUtilTest {
         CkycUploadRequest.ImageDetail photo = new CkycUploadRequest.ImageDetail();
         photo.setImageCode("70");
         photo.setImageData(base64("photo"));
-        photo.setImageFormat("PNG");
+        photo.setImageFormat("JPG");
 
         CkycUploadRequest.ImageDetail signature = new CkycUploadRequest.ImageDetail();
         signature.setImageCode("71");

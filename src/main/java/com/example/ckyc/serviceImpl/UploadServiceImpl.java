@@ -6,6 +6,7 @@ import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.model.ApiResponse;
 import com.example.ckyc.util.FieldValidationUtil;
 import com.example.ckyc.util.ImageValidationUtil;
+import com.example.ckyc.util.MaskingUtil;
 import com.example.ckyc.util.RequestIdGenerator;
 import com.example.ckyc.service.UploadService;
 import lombok.RequiredArgsConstructor;
@@ -35,18 +36,30 @@ public class UploadServiceImpl implements UploadService {
     private final AuditService auditService;
     private final ImageValidationUtil imageValidationUtil;
     private final FieldValidationUtil fieldValidationUtil;
+    private final MaskingUtil maskingUtil;
 
     @Override
     public ApiResponse<Map<String, Object>> upload(CkycUploadRequest request) {
+        long startNanos = System.nanoTime();
         if (!ckycProperties.isAllowNonStandardUploadUpdateApi()) {
             throw new CkycValidationException(
                     "CKYC upload via API is not enabled. As per CKYC public docs, upload/update are SFTP-driven flows."
             );
         }
+        log.warn("CKYC upload is running in non-standard direct API mode (official channel is SFTP)");
         fieldValidationUtil.validateUploadRequest(request);
         imageValidationUtil.validateUploadRequest(request);
         String requestId = requestIdGenerator.nextRequestId();
-        log.info("Preparing CKYC upload request requestId={}", requestId);
+        int identityCount = request.getIdentityDetails() == null ? 0 : request.getIdentityDetails().size();
+        int addressCount = request.getAddressDetails() == null ? 0 : request.getAddressDetails().size();
+        int imageCount = request.getImageDetails() == null ? 0 : request.getImageDetails().size();
+        log.info(
+                "CKYC upload started requestId={} identityCount={} addressCount={} imageCount={}",
+                requestId,
+                identityCount,
+                addressCount,
+                imageCount
+        );
 
         String pidData = xmlBuilderService.buildUploadPidData(request, LocalDateTime.now().format(REQUEST_TS_FORMAT));
         String signedRequest = ckycEnvelopeService.encryptAndSign(OPERATION_UPLOAD, requestId, pidData);
@@ -63,12 +76,34 @@ public class UploadServiceImpl implements UploadService {
         if (error != null && !error.isBlank()) {
             if (isDuplicate(error)) {
                 auditService.record(OPERATION_UPLOAD, requestId, "DUPLICATE", error);
+                log.warn(
+                        "CKYC upload duplicate requestId={} errorCode={} elapsedMs={} error={}",
+                        requestId,
+                        processed.get("errorCode"),
+                        elapsedMs(startNanos),
+                        maskingUtil.maskSensitive(error)
+                );
                 return ApiResponse.of(requestId, "DUPLICATE", "CKYC record already exists", data);
             }
+            log.error(
+                    "CKYC upload failed requestId={} errorCode={} elapsedMs={} error={}",
+                    requestId,
+                    processed.get("errorCode"),
+                    elapsedMs(startNanos),
+                    maskingUtil.maskSensitive(error)
+            );
             throw new CkycValidationException(error);
         }
 
         auditService.record(OPERATION_UPLOAD, requestId, "SUCCESS", "upload completed");
+        log.info(
+                "CKYC upload completed requestId={} status={} ckycNo={} referenceId={} elapsedMs={}",
+                requestId,
+                processed.get("status"),
+                maskingUtil.maskSensitive(value(processed.get("ckycNo"))),
+                value(processed.get("ckycReferenceId")),
+                elapsedMs(startNanos)
+        );
         return ApiResponse.of(requestId, "SUCCESS", "CKYC upload completed successfully", data);
     }
 
@@ -79,5 +114,13 @@ public class UploadServiceImpl implements UploadService {
                 .filter(keyword -> keyword != null && !keyword.isBlank())
                 .map(keyword -> keyword.toUpperCase(Locale.ROOT))
                 .anyMatch(normalized::contains);
+    }
+
+    private long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
+    private String value(Object input) {
+        return input == null ? null : input.toString();
     }
 }

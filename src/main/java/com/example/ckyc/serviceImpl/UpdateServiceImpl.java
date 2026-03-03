@@ -53,12 +53,14 @@ public class UpdateServiceImpl implements UpdateService {
 
     @Override
     public CkycUpdateResponseDto update(CkycUpdateRequestDto request) {
+        long startNanos = System.nanoTime();
         validateRequest(request);
         if (!ckycProperties.isAllowNonStandardUploadUpdateApi()) {
             throw new CkycValidationException(
                     "CKYC update via API is not enabled. As per CKYC public docs, upload/update are SFTP-driven flows."
             );
         }
+        log.warn("CKYC update is running in non-standard direct API mode (official channel is SFTP)");
         if (ckycProperties.getUpdateUrl() == null || ckycProperties.getUpdateUrl().isBlank()) {
             throw new CkycValidationException("CKYC update endpoint is not configured");
         }
@@ -81,6 +83,14 @@ public class UpdateServiceImpl implements UpdateService {
 
         if (isDuplicate(error, errorCode)) {
             auditService.record(OPERATION_UPDATE, requestId, "DUPLICATE", error);
+            log.warn(
+                    "CKYC update duplicate requestId={} ckycNo={} errorCode={} elapsedMs={} error={}",
+                    requestId,
+                    maskingUtil.maskSensitive(responseCkycNo),
+                    errorCode,
+                    elapsedMs(startNanos),
+                    maskingUtil.maskSensitive(error)
+            );
             return CkycUpdateResponseDto.builder()
                     .status("DUPLICATE")
                     .message("Duplicate update attempt")
@@ -94,10 +104,27 @@ public class UpdateServiceImpl implements UpdateService {
             String upstreamMessage = (error == null || error.isBlank())
                     ? "CKYC update rejected with status: " + responseStatus
                     : error;
+            log.error(
+                    "CKYC update failed requestId={} ckycNo={} status={} errorCode={} elapsedMs={} error={}",
+                    requestId,
+                    maskingUtil.maskSensitive(responseCkycNo),
+                    responseStatus,
+                    errorCode,
+                    elapsedMs(startNanos),
+                    maskingUtil.maskSensitive(upstreamMessage)
+            );
             throw new CkycUpstreamException(upstreamMessage, 502, false, rawResponse);
         }
 
         auditService.record(OPERATION_UPDATE, requestId, "SUCCESS", "update completed");
+        log.info(
+                "CKYC update completed requestId={} ckycNo={} status={} errorCode={} elapsedMs={}",
+                requestId,
+                maskingUtil.maskSensitive(responseCkycNo),
+                responseStatus,
+                errorCode,
+                elapsedMs(startNanos)
+        );
         return CkycUpdateResponseDto.builder()
                 .status("SUCCESS")
                 .message("CKYC update successful")
@@ -113,7 +140,7 @@ public class UpdateServiceImpl implements UpdateService {
             byte[] sessionKey = CryptoUtil.generateSessionKey();
             String encryptedPid = CryptoUtil.encryptAES(pidData, sessionKey);
 
-            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(ckycProperties.getCersaiCert());
+            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(resolveCkycPublicCertPath());
             String encryptedSessionKey = CryptoUtil.encryptRSA(sessionKey, cersaiPublicKey);
 
             unsignedXml = updateXmlBuilder.buildUnsignedRequest(
@@ -128,16 +155,8 @@ public class UpdateServiceImpl implements UpdateService {
         }
 
         try {
-            PrivateKey privateKey = KeyLoaderUtil.loadPrivateKeyFromPKCS12(
-                    ckycProperties.getP12Path(),
-                    ckycProperties.getP12Password(),
-                    ckycProperties.getP12Alias()
-            );
-            X509Certificate cert = KeyLoaderUtil.loadCertificateFromPKCS12(
-                    ckycProperties.getP12Path(),
-                    ckycProperties.getP12Password(),
-                    ckycProperties.getP12Alias()
-            );
+            PrivateKey privateKey = loadProjectPrivateKey();
+            X509Certificate cert = loadProjectCertificate();
             Document document = XmlHelper.parse(unsignedXml);
             XmlUtil.signXml(document, privateKey, cert);
             return XmlHelper.toString(document);
@@ -201,5 +220,41 @@ public class UpdateServiceImpl implements UpdateService {
         }
         String normalized = status.trim().toUpperCase(Locale.ROOT);
         return "SUCCESS".equals(normalized) || "S".equals(normalized) || "0".equals(normalized);
+    }
+
+    private long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
+    private String resolveCkycPublicCertPath() {
+        return hasText(ckycProperties.getCkycPublicKeyPath())
+                ? ckycProperties.getCkycPublicKeyPath()
+                : ckycProperties.getCersaiCert();
+    }
+
+    private PrivateKey loadProjectPrivateKey() throws Exception {
+        if (hasText(ckycProperties.getProjectPrivateKeyPath())) {
+            return KeyLoaderUtil.loadPrivateKeyFromPem(ckycProperties.getProjectPrivateKeyPath());
+        }
+        return KeyLoaderUtil.loadPrivateKeyFromPKCS12(
+                ckycProperties.getP12Path(),
+                ckycProperties.getP12Password(),
+                ckycProperties.getP12Alias()
+        );
+    }
+
+    private X509Certificate loadProjectCertificate() throws Exception {
+        if (hasText(ckycProperties.getProjectPublicKeyPath())) {
+            return KeyLoaderUtil.loadCertificateFromCer(ckycProperties.getProjectPublicKeyPath());
+        }
+        return KeyLoaderUtil.loadCertificateFromPKCS12(
+                ckycProperties.getP12Path(),
+                ckycProperties.getP12Password(),
+                ckycProperties.getP12Alias()
+        );
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

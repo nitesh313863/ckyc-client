@@ -1,8 +1,8 @@
 package com.example.ckyc.dto;
 
 import com.example.ckyc.constant.AuthFactorType;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data

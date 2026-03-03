@@ -1,25 +1,32 @@
 package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.dto.CkycUpdateRequestDto;
+import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.util.ImageMapperUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Component
 public class UpdateXmlBuilder {
+
+    private static final Pattern CKYC_NO_PATTERN = Pattern.compile("^\\d{14}$");
 
     public String buildPidData(
             CkycUpdateRequestDto request,
             String requestTimestamp,
             List<ImageMapperUtil.NormalizedImage> images
     ) {
+        String updateType = normalizeUpdateType(request.getUpdateType());
+        String ckycNo = normalizeCkycNo(request.getCkycNo());
+
         StringBuilder xml = new StringBuilder();
         xml.append("<PID_DATA>");
         xml.append(tag("DATE_TIME", requestTimestamp));
-        xml.append(tag("CKYC_NO", request.getCkycNo()));
-        xml.append(tag("UPDATE_TYPE", request.getUpdateType().toUpperCase(Locale.ROOT)));
+        xml.append(tag("CKYC_NO", ckycNo));
+        xml.append(tag("UPDATE_TYPE", updateType));
 
         appendPersonalDetails(xml, request.getPersonalDetails());
         appendIdentityList(xml, request.getIdentityList());
@@ -123,15 +130,39 @@ public class UpdateXmlBuilder {
             if (image == null) {
                 continue;
             }
-            section.append("<IMAGE>")
-                    .append(tag("IMAGE_CODE", image.imageCode()))
-                    .append(tag("IMAGE_DATA", image.imageData()))
-                    .append(tag("IMAGE_FORMAT", image.imageFormat()))
-                    .append("</IMAGE>");
+            StringBuilder item = new StringBuilder();
+            item.append(tag("IMAGE_CODE", image.imageCode()));
+            item.append(tag("IMAGE_DATA", image.imageData()));
+            item.append(tag("IMAGE_FORMAT", image.imageFormat()));
+            if (!item.isEmpty()) {
+                section.append("<IMAGE>").append(item).append("</IMAGE>");
+            }
         }
         if (!section.isEmpty()) {
             xml.append("<IMAGE_DETAILS>").append(section).append("</IMAGE_DETAILS>");
         }
+    }
+
+    private String normalizeUpdateType(String updateType) {
+        if (updateType == null || updateType.isBlank()) {
+            throw new CkycValidationException("updateType is mandatory");
+        }
+        String normalized = updateType.trim().toUpperCase(Locale.ROOT);
+        if (!"FULL".equals(normalized) && !"PARTIAL".equals(normalized)) {
+            throw new CkycValidationException("updateType must be FULL or PARTIAL");
+        }
+        return normalized;
+    }
+
+    private String normalizeCkycNo(String ckycNo) {
+        if (ckycNo == null || ckycNo.isBlank()) {
+            throw new CkycValidationException("CKYC_NO is mandatory");
+        }
+        String normalized = ckycNo.trim();
+        if (!CKYC_NO_PATTERN.matcher(normalized).matches()) {
+            throw new CkycValidationException("CKYC_NO must be numeric and 14 digits");
+        }
+        return normalized;
     }
 
     private String tag(String name, String value) {

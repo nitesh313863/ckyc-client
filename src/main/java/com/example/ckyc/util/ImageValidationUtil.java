@@ -47,7 +47,10 @@ public class ImageValidationUtil {
             if (!seenCodes.add(code)) {
                 throw new CkycValidationException("Duplicate imageCode not allowed: " + code);
             }
-            validateBase64AndSize(image.getImageData(), "imageDetails[" + i + "].imageData");
+            int maxBytes = "70".equals(code)
+                    ? Math.max(1, ckycProperties.getUpload().getMaxPhotoBytes())
+                    : Math.max(1, ckycProperties.getUpload().getMaxImageBytes());
+            validateBase64AndSize(image.getImageData(), "imageDetails[" + i + "].imageData", maxBytes);
             validateImageFormat(image.getImageData(), image.getImageFormat(), "imageDetails[" + i + "]");
             if ("70".equals(code)) {
                 photographPresent = true;
@@ -79,7 +82,11 @@ public class ImageValidationUtil {
             if (!seenCodes.add(image.imageCode())) {
                 throw new CkycValidationException("Duplicate imageCode not allowed: " + image.imageCode());
             }
-            validateBase64AndSize(image.imageData(), "imageList[" + i + "].imageData");
+            validateBase64AndSize(
+                    image.imageData(),
+                    "imageList[" + i + "].imageData",
+                    Math.max(1, ckycProperties.getUpload().getMaxImageBytes())
+            );
             validateImageFormat(image.imageData(), image.imageFormat(), "imageList[" + i + "]");
             if ("71".equals(image.imageCode())) {
                 signatureImageValidator.validate(image.imageData(), image.imageFormat(), "imageList[" + i + "]");
@@ -99,7 +106,7 @@ public class ImageValidationUtil {
         }
     }
 
-    private void validateBase64AndSize(String data, String field) {
+    private void validateBase64AndSize(String data, String field, int maxBytes) {
         if (data == null || data.isBlank()) {
             throw new CkycValidationException(field + " is mandatory");
         }
@@ -112,10 +119,9 @@ public class ImageValidationUtil {
         if (decoded.length == 0) {
             throw new CkycValidationException(field + " must not be empty");
         }
-        int maxImageBytes = Math.max(1, ckycProperties.getUpload().getMaxImageBytes());
-        if (decoded.length > maxImageBytes) {
+        if (decoded.length > maxBytes) {
             throw new CkycValidationException(
-                    field + " size exceeded. Max allowed bytes: " + maxImageBytes
+                    field + " size exceeded. Max allowed bytes: " + maxBytes
             );
         }
     }
@@ -123,7 +129,7 @@ public class ImageValidationUtil {
     private void validateImageFormat(String imageData, String imageFormat, String fieldPrefix) {
         String resolvedFormat = resolveImageFormat(imageData, imageFormat);
         if (resolvedFormat == null || resolvedFormat.isBlank()) {
-            throw new CkycValidationException(fieldPrefix + ".imageFormat is mandatory and must be JPG/JPEG/PNG");
+            throw new CkycValidationException(fieldPrefix + ".imageFormat is mandatory and must be a configured CKYC format");
         }
         Set<String> allowedFormats = ckycProperties.getUpload().getAllowedImageFormats()
                 .stream()
@@ -131,7 +137,7 @@ public class ImageValidationUtil {
                 .map(value -> value.trim().toUpperCase(Locale.ROOT))
                 .collect(java.util.stream.Collectors.toSet());
         if (allowedFormats.isEmpty()) {
-            allowedFormats = Set.of("JPG", "JPEG", "PNG");
+            allowedFormats = Set.of("TIF", "TIFF", "PDF", "JPEG", "JPG");
         }
         if (!allowedFormats.contains(resolvedFormat)) {
             throw new CkycValidationException(fieldPrefix + ".imageFormat must be one of " + allowedFormats);
@@ -152,8 +158,14 @@ public class ImageValidationUtil {
         if (lower.startsWith("data:image/jpg;base64,")) {
             return "JPG";
         }
-        if (lower.startsWith("data:image/png;base64,")) {
-            return "PNG";
+        if (lower.startsWith("data:image/tiff;base64,")) {
+            return "TIFF";
+        }
+        if (lower.startsWith("data:image/tif;base64,")) {
+            return "TIF";
+        }
+        if (lower.startsWith("data:application/pdf;base64,")) {
+            return "PDF";
         }
         return null;
     }

@@ -14,7 +14,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SignatureImageValidator {
 
-    private static final Set<String> ALLOWED_SIGNATURE_FORMATS = Set.of("JPG", "JPEG", "PNG");
+    private static final Set<String> ALLOWED_SIGNATURE_FORMATS = Set.of("JPG", "JPEG", "TIF", "TIFF");
 
     private final CkycProperties ckycProperties;
 
@@ -41,7 +41,7 @@ public class SignatureImageValidator {
 
         String resolvedFormat = resolveFormat(imageData, imageFormat);
         if (resolvedFormat == null || !ALLOWED_SIGNATURE_FORMATS.contains(resolvedFormat)) {
-            throw new CkycValidationException(fieldPrefix + ".imageFormat must be JPG/JPEG/PNG for IMAGE_CODE 71");
+            throw new CkycValidationException(fieldPrefix + ".imageFormat must be JPG/JPEG/TIF/TIFF for IMAGE_CODE 71");
         }
 
         if (looksExecutable(decoded)) {
@@ -60,8 +60,11 @@ public class SignatureImageValidator {
         if (lower.startsWith("data:image/jpg;base64,")) {
             return "JPG";
         }
-        if (lower.startsWith("data:image/png;base64,")) {
-            return "PNG";
+        if (lower.startsWith("data:image/tiff;base64,")) {
+            return "TIFF";
+        }
+        if (lower.startsWith("data:image/tif;base64,")) {
+            return "TIF";
         }
         return null;
     }
