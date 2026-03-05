@@ -27,8 +27,8 @@ class FieldValidationUtilTest {
     void validateDownloadRequest_shouldPass_forValidInput() {
         CkycDownloadRequest request = new CkycDownloadRequest();
         request.setCkycNo("12345678901234");
-        request.setAuthFactorType(AuthFactorType.PAN);
-        request.setAuthFactor("ABCDE1234F");
+        request.setAuthFactorType(AuthFactorType.MOBILE);
+        request.setAuthFactor("9876543210");
 
         assertDoesNotThrow(() -> fieldValidationUtil.validateDownloadRequest(request));
     }
@@ -37,7 +37,7 @@ class FieldValidationUtilTest {
     void validateDownloadRequest_shouldFail_forInvalidCkycNo() {
         CkycDownloadRequest request = new CkycDownloadRequest();
         request.setCkycNo("ABC");
-        request.setAuthFactorType(AuthFactorType.OTP);
+        request.setAuthFactorType(AuthFactorType.MOBILE);
         request.setAuthFactor("123456");
 
         assertThrows(CkycValidationException.class, () -> fieldValidationUtil.validateDownloadRequest(request));

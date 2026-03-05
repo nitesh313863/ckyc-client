@@ -23,6 +23,29 @@ public class CkycEnvelopeService {
     private final XmlBuilderService xmlBuilderService;
 
     public String encryptAndSign(String operationTag, String requestId, String pidData) {
+        return encryptAndSignInternal(requestId, pidData, (encryptedPid, encryptedSessionKey) ->
+                xmlBuilderService.buildEnvelope(
+                        ckycProperties.getFiCode(),
+                        requestId,
+                        ckycProperties.getVersion(),
+                        operationTag,
+                        encryptedPid,
+                        encryptedSessionKey
+                ));
+    }
+
+    public String encryptAndSignDownloadInq(String requestId, String pidData) {
+        return encryptAndSignInternal(requestId, pidData, (encryptedPid, encryptedSessionKey) ->
+                xmlBuilderService.buildDownloadEnvelope(
+                        ckycProperties.getFiCode(),
+                        requestId,
+                        ckycProperties.getVersion(),
+                        encryptedPid,
+                        encryptedSessionKey
+                ));
+    }
+
+    private String encryptAndSignInternal(String requestId, String pidData, EnvelopeBuilder envelopeBuilder) {
         byte[] sessionKey;
         String encryptedPid;
         String encryptedSessionKey;
@@ -35,14 +58,7 @@ public class CkycEnvelopeService {
             throw new CkycEncryptionException("Failed to encrypt CKYC request payload", ex);
         }
 
-        String unsignedXml = xmlBuilderService.buildEnvelope(
-                ckycProperties.getFiCode(),
-                requestId,
-                ckycProperties.getVersion(),
-                operationTag,
-                encryptedPid,
-                encryptedSessionKey
-        );
+        String unsignedXml = envelopeBuilder.build(encryptedPid, encryptedSessionKey);
 
         try {
             PrivateKey privateKey = loadProjectPrivateKey();
@@ -86,5 +102,10 @@ public class CkycEnvelopeService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    @FunctionalInterface
+    private interface EnvelopeBuilder {
+        String build(String encryptedPid, String encryptedSessionKey);
     }
 }

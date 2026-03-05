@@ -30,10 +30,14 @@ public class XmlBuilderService {
     }
 
     public String buildValidateOtpPidData(CkycValidateOtpRequest request, String timestamp) {
+        String validateValue = request.getValidate() == null || request.getValidate().isBlank()
+                ? "Y"
+                : request.getValidate().trim().toUpperCase(Locale.ROOT);
+        String otpValue = request.getOtp() == null ? "" : request.getOtp().trim();
         return "<PID_DATA>"
                 + tag("DATE_TIME", timestamp)
-                + tag("CKYC_NO", request.getCkycNo())
-                + tag("OTP", request.getOtp())
+                + rawTag("OTP", otpValue)
+                + rawTag("VALIDATE", validateValue)
                 + "</PID_DATA>";
     }
 
@@ -170,11 +174,43 @@ public class XmlBuilderService {
                 + "</REQ_ROOT>";
     }
 
+    public String buildDownloadEnvelope(
+            String fiCode,
+            String requestId,
+            String version,
+            String encryptedPid,
+            String encryptedSessionKey
+    ) {
+        if (encryptedPid == null || encryptedPid.isBlank()) {
+            throw new CkycValidationException("Encrypted PID is mandatory");
+        }
+        if (encryptedSessionKey == null || encryptedSessionKey.isBlank()) {
+            throw new CkycValidationException("Encrypted session key is mandatory");
+        }
+
+        return "<CKYC_DOWNLOAD_REQUEST>"
+                + "<HEADER>"
+                + tag("FI_CODE", fiCode)
+                + tag("REQUEST_ID", requestId)
+                + tag("VERSION", version)
+                + "</HEADER>"
+                + "<CKYC_INQ>"
+                + tag("SESSION_KEY", encryptedSessionKey)
+                + tag("PID", encryptedPid)
+                + "</CKYC_INQ>"
+                + "</CKYC_DOWNLOAD_REQUEST>";
+    }
+
     private String tag(String name, String value) {
         if (value == null || value.isBlank()) {
             return "";
         }
         return "<" + name + ">" + xmlEscape(value) + "</" + name + ">";
+    }
+
+    private String rawTag(String name, String value) {
+        String safeValue = value == null ? "" : value;
+        return "<" + name + ">" + xmlEscape(safeValue) + "</" + name + ">";
     }
 
     private String xmlEscape(String value) {

@@ -5,6 +5,7 @@ import com.example.ckyc.constant.AuthFactorType;
 import com.example.ckyc.dto.CkycDownloadRequest;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.dto.CkycUploadRequest;
+import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ public class FieldValidationUtil {
     private static final Pattern AADHAAR_PATTERN = Pattern.compile("^\\d{12}$");
     private static final Pattern MOBILE_PATTERN = Pattern.compile("^\\d{10}$");
     private static final Pattern CKYC_NO_PATTERN = Pattern.compile("^\\d+$");
+    private static final Pattern CKYC_IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z0-9]+$");
+    private static final Pattern PIN_CODE_PATTERN = Pattern.compile("^\\d{6}$");
+    private static final Pattern OTP_PATTERN = Pattern.compile("^\\d{6}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
     );
@@ -32,8 +36,25 @@ public class FieldValidationUtil {
         if (request == null) {
             throw new CkycValidationException("Request body is mandatory");
         }
-        validateCkycNo(request.getCkycNo(), "CKYC_NO");
+        validateDownloadIdentifier(request.getCkycNo(), "CKYC_NO");
         validateAuthFactor(request.getAuthFactorType(), request.getAuthFactor());
+    }
+
+    public void validateValidateOtpRequest(CkycValidateOtpRequest request) {
+        if (request == null) {
+            throw new CkycValidationException("Request body is mandatory");
+        }
+        if (request.getRequestId() == null || request.getRequestId().isBlank()) {
+            throw new CkycValidationException("requestId is mandatory for validate-otp flow");
+        }
+        if (request.getValidate() != null && !request.getValidate().isBlank()
+                && !"Y".equalsIgnoreCase(request.getValidate().trim())) {
+            throw new CkycValidationException("VALIDATE must be Y");
+        }
+        if (request.getOtp() != null && !request.getOtp().isBlank()
+                && !OTP_PATTERN.matcher(request.getOtp().trim()).matches()) {
+            throw new CkycValidationException("OTP must be numeric 6 digits");
+        }
     }
 
     public void validateUploadRequest(CkycUploadRequest request) {
@@ -79,6 +100,17 @@ public class FieldValidationUtil {
         }
     }
 
+    private void validateDownloadIdentifier(String identifier, String fieldName) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new CkycValidationException(fieldName + " is mandatory");
+        }
+        String normalized = identifier.trim();
+        int expectedLength = Math.max(1, ckycProperties.getValidation().getCkycNoLength());
+        if (normalized.length() != expectedLength || !CKYC_IDENTIFIER_PATTERN.matcher(normalized).matches()) {
+            throw new CkycValidationException(fieldName + " must be " + expectedLength + " alphanumeric characters");
+        }
+    }
+
     private void validateAuthFactor(AuthFactorType authFactorType, String authFactor) {
         if (authFactorType == null) {
             throw new CkycValidationException("AUTH_FACTOR_TYPE is mandatory");
@@ -89,15 +121,14 @@ public class FieldValidationUtil {
         String value = authFactor.trim();
 
         switch (authFactorType) {
-            case OTP -> {
-                if (!Pattern.compile("^\\d{4,8}$").matcher(value).matches()) {
-                    throw new CkycValidationException("AUTH_FACTOR must be 4 to 8 digit OTP for AUTH_FACTOR_TYPE OTP");
-                }
-            }
-            case DOB -> validateDob(value, "AUTH_FACTOR", true);
-            case PAN -> validatePan(value, "AUTH_FACTOR", true);
+            case DOI -> validateDob(value, "AUTH_FACTOR", true);
             case MOBILE -> validateMobile(value, "AUTH_FACTOR", true);
             case EMAIL -> validateEmail(value, "AUTH_FACTOR", true);
+            case PINCODE -> {
+                if (!PIN_CODE_PATTERN.matcher(value).matches()) {
+                    throw new CkycValidationException("AUTH_FACTOR must be valid 6-digit pincode for AUTH_FACTOR_TYPE 05");
+                }
+            }
             default -> throw new CkycValidationException("Unsupported AUTH_FACTOR_TYPE: " + authFactorType.name());
         }
     }

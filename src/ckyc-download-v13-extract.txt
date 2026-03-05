@@ -1,0 +1,3583 @@
+
+
+===== PAGE 1 =====
+ 
+Non -Confidential  ` 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Central KYC Registry  
+Secured Download API Document  
+Version 1. 3 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 2 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 2 | Secured Download  API v1.3  
+Non -Confidential   
+Table of Contents  
+ 
+1.1 Introduction  ................................ ................................ ................................ ................................ ..............  4 
+1.2 Request  ................................ ................................ ................................ ................................ .....................  6 
+1.2.1 Client side: - ................................ ................................ ................................ ................................ ..........  6 
+1.2.2 Request format: - ................................ ................................ ................................ ..............................  6 
+V1.3 Response from the first Endpoint (/download)  ................................ ................................ ...................  7 
+V1.3 Request for new end point (/ValidateOTP)  ................................ ................................ ...........................  8 
+1.3 Response  ................................ ................................ ................................ ................................ ................  10 
+1.3.1 Client side: - ................................ ................................ ................................ ................................ .... 10 
+1.3.2 Response Format for Individual: - ................................ ................................ ................................ . 10 
+2.3.3  Response Format failure cases V1.3: - ................................ ................................ .....................  21 
+1.3.4 Response Format for Legal Entity: - ................................ ................................ ..............................  23 
+2.1 Web Services Details  ................................ ................................ ................................ .............................  30 
+2.1.1 Request Parameters  ................................ ................................ ................................ .......................  30 
+2.1.2 Response Parameters for Individual:  ................................ ................................ ............................  32 
+2.1.3: Response parameters for Legal Entity:  ................................ ................................ ........................  49 
+2.1.3 Error Messages  ................................ ................................ ................................ ................................  66 
+3.1 Sample Request  ................................ ................................ ................................ ................................ ..... 68 
+Sample request is given below for Individual record  ................................ ................................ .................  68 
+3.2 Sample Response  ................................ ................................ ................................ ................................ .. 70 
+3.3 Upload Public Key Menu Configuration for API access  ................................ ................................ .......  81 
+ 
+ 
+  
+
+===== PAGE 3 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 3 | Secured Download  API v1.3  
+Non -Confidential  Document Update history  
+Date  Version  Remarks  
+- 1.0 Original Document  
+- 1.1 Original Document  
+- 1.2 Original Document  
+- 1.2 Document Update - Response parameters of Individual and Legal 
+Entity  
+09-Mar-21 1.2 Sample for Individual and Legal  
+09-Apr-21 1.2 Document Update of Legal Entity response tags  
+LE – IPV Flag  
+LE – Related persons  
+15-Jun-2021  1.2 Document Update: Branch code length rectified from 11 to 15  
+09-Jul-2021  1.2 Document Update: Mobile number length rectified from 10 to 20  
+06-Aug-2021  1.2 Document Update: Correspondence Address tags changed from 
+Mandatory to Mandatory/Optional  
+18-Oct-2023  1.2 Addition of tags Count of download and update tags under 
+<PID_DATA> <RECORD_COUNT_DETAILS>  
+05-Dec-2023  1.2 Document Update: Session key placement  
+24-Sep-2024  1.2 Document Update: Introduced new features that allow users to 
+download records using CKYC reference id in <CKYC_NO> tag  and 
+new tag <CKYC_REFERENCE_ID> is introduced in download 
+response to get CKYC reference id.  
+04-April-2025  1.3 CKYC Download API version updated to v1.3:  
+- Introduced OTP consent mechanism from customers for 
+download of  individual records  
+- Change in authentication factor s permitted due to OTP 
+validation  
+- Introduced changes with upgrading of SHA algorithm from 
+SHA1 to SHA 256. 
+ 
+15-April-2025  1.3 Document update: Replaced opening and closing XML tag in 
+/ValidateOTP request  from <REQ_ROOT> to 
+<CKYC_DOWNLOAD_REQUEST>  
+24-April-2025  1.3 Document update: Add itional fields in API response for 
+Residential Status and Foreign National ID   
+15-July-2025 1.3 Document Update – 
+Addition of note to section 2.1.1  
+Addition of steps for Upload Public Key menu  
+Additional authentication factor for Legal Entity KYC record 
+download  
+21-Aug-2025  1.3 Document update:  
+Addition of Differently Abled fields  in response  to section 1.3.2  
+Addition of Differently Abled fields in response to section 1.3.4  
+Addition of Differently Abled fields in response to section 2.1.2  
+ 
+ 
+
+===== PAGE 4 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 4 | Secured Download  API v1.3  
+Non -Confidential  1.1 Introduction  
+ 
+This web service is used to download the KYC data of an individual using CKYC number  or 
+newly introduced CKYC Alphanumeric Reference ID  and date of birth. This is applicable for 
+registered reporting entities (REs) . Both CERSAI and the reporting entity  should share their 
+public key and IP address while registering for this service. After registration RE should upload 
+their public key and provide IP address through Upload Public Key interface in CKYC 
+application that can be accessed by Institution admins. The  following table provides details 
+on CKYC download -Interface Properties:  
+ 
+PROPERTY  VALUE  
+Test Bed URL  https://testbed.ckycindia.in/Search/ckycverificationservice/download  
+https://testbed.ckycindia.in/Search/ckycverificationservice/ValidateOT
+P 
+Live URL  https://www.ckycindia.in/Search/ckycverificationservice/download  
+https://www.ckycindia.in/Search/ckycverificationservice/ValidateOTP  
+Request Type  Application/XML  
+Response Type  Application/XML  
+Request Digital 
+Signed  Yes 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 5 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 5 | Secured Download  API v1.3  
+Non -Confidential  KYC download process for Individual KYC records through API  
+ 
+
+
+===== PAGE 6 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 6 | Secured Download  API v1.3  
+Non -Confidential  1.2 Request  
+Requests  should be digitally signed using RE’s Private Key (from a Class II or III Digital 
+Signature in the name of the RE) and the corresponding  public key should be shared with 
+CERSAI at the time of registering for this service. The RE should upload their public key in .cer 
+format on the web application - post login, the institutional admin can use the “Upload public 
+Key” option under User management for this. Personal Identity Data (PID) should be encrypted 
+using session key and session key should be encrypted using public key provided by CERSAI 
+so it can be decrypted  only with CERSAI’s private key. The encrypted PID and session key 
+should be encoded to Base64 string. Users can follow the steps below  for encryption.  
+ 
+1.2.1 Client side : - 
+• Generate a random 256 -bit session key.  
+• Encrypt PID and timestamp using this session key by AES algorithm.  
+• Encode the encrypted PID to Base64 string  
+• Encrypt the session key using public key provided by CERSAI using RSA algorithm.  
+• Encode the encrypted session key to Base64 string  
+• Add this encrypted and encoded session key in request xml.  
+• Sign entire request using RE's private key.  
+ 
+ 
+Note:  
+1) Currently only TLS v1.3 is supported  
+2) For V1.3, request should be encrypted with 
+RSA/NONE/OAEPWithSHA256AndMGF1Padding algorithm and xml request should be 
+signed with SHA256 algorithm.   
+ 
+1.2.2 Request format: - 
+Request format shall be the  same for Individual  and Legal  KYC records . 
+API version 1.3 is applicable for both Individual records and Legal records, however OTP 
+based validation is only applicable for Individual records . 
+ 
+PID data in the CKYC download request  consists of CKYC_NO  / CKYC reference ID, 
+DATE_TIME, AUTH _FACTOR_TYPE  and AUTH_FACTOR . We have 3 types of 
+AUTH_FACTOR_TYPE  and AUTH_FACTOR as below. Per download request, RE may use any 
+one of the AUTH_FACTOR_TYPE  and AUTH_FACTOR.  
+1. If “AUTH_FACTOR_TYPE ” is 01 then DOI is required in “ AUTH_FACTOR ” (in dd-mm-
+yyyy Format) . This may be used for download of legal entities records only.  
+2. If “AUTH_FACTOR_TYPE ” is 03 then Mobile No. is required in “ AUTH_FACTOR ” (in 10 
+digits). This may be used for download of Individual records only.  
+
+===== PAGE 7 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 7 | Secured Download  API v1.3  
+Non -Confidential  Request For API Download:  
+<?xml version="1.0" encoding="UTF -8"?>  
+<CKYC_DOWNLOAD_REQUEST>  
+<HEADER>  
+<FI_CODE></FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+<VERSION> 1.3</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+<SESSION_KEY></SESSION_KEY>  
+<PID></PID>  
+</CKYC_INQ>  
+<Signature></Signature>  
+</CKYC_DOWNLOAD_REQUEST>  
+ 
+PID Data in Request:  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME></DATE_TIME>  
+<CKYC_NO  ></CKYC_NO  > 
+<AUTH_FACTOR_TYPE></AUTH_FACTOR_TYPE>  
+<AUTH_FACTOR></AUTH_FACTOR>  
+</PID_DATA>  
+ 
+Here, CKYC number or CKYC reference id will be given in < CKYC_NO  ></CKYC_NO  > tag.  
+V1.3 Response from the first Endpoint (/download)  
+1. If the CKYC number and auth factor provided by the RE  matches with CKYC record, 
+then CKYC API will trigger an OTP to the registered mobile  number of the CKYC record 
+and then the RE will get the below response.  
+<HEADER>   
+ <FI_CODE> </FI_CODE>  
+ <REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+    <ERROR>  OTP has been sent to the registered mobile number XXXXXX6045 </ERROR>  
+</CKYC_INQ>  
+ 
+
+===== PAGE 8 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 8 | Secured Download  API v1.3  
+Non -Confidential   
+2. If the CKYC number and auth factor provided by the RE do not match with CKYC 
+record, then then CKYC API will provide the error response like below.  
+<HEADER>  
+ <FI_CODE> </FI_CODE>  
+ <REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+    <ERROR> Download failed. Auth Factor does not match that registered in the KYC 
+record</ERROR>  
+</CKYC_INQ>  
+ 
+3. If the mobile number is not present  for the CKYC Record , then the user will get the 
+error response  as below  
+<HEADER>  
+ <FI_CODE> </FI_CODE>  
+ <REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+    <ERROR> Download failed. Mobile number is not registered in the KYC record. Please 
+download using bulk file methods </ERROR>  
+</CKYC_INQ>  
+ 
+V1.3 Request for new end point (/ValidateOTP)  
+1. After collecting the OTP from the customer, RE must use the new endpoint to trigger 
+the OTP validation process.  
+2. In the new endpoint the RE’s must share the same header which is used for endpoint 
+(/download). CKYC API will validate the OTP shared with the end user and  the OTP 
+received from the RE’s are same. If OTP Validation is successful , then the RE’s will 
+receive the  CKYC record  in response  
+Request format  
+<?xml version="1.0" encoding="UTF -8"?>  
+<CKYC_DOWNLOAD_REQUEST > 
+ <HEADER>  
+
+===== PAGE 9 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 9 | Secured Download  API v1.3  
+Non -Confidential    <FI_CODE></FI_CODE>  
+  <REQUEST_ID></REQUEST_ID>  
+  <VERSION></VERSION>  
+ </HEADER>  
+ <CKYC_INQ>  
+  <SESSION_KEY> </SESSION_KEY>  
+  <PID>  
+   <PID_DATA>  
+    <DATE_TIME></DATE_TIME>  
+    <OTP></OTP>  
+    <VALIDATE></VALIDATE>  
+   </PID_DATA>  
+        </PID>  
+    </CKYC_INQ>  
+</CKYC_DOWNLOAD_REQUEST > 
+ 
+Note:  
+➢ DATE_TIME - > Will be current date and time.  
+➢ OTP -> will accept 6-digit OTP and empty value  
+To Validate OTP  
+  User will share the 6 -digit OTP which is received by the owner of CKYC record  
+ <OTP>123456</OTP>  
+ <VALIDATE>Y</VALIDATE>  
+   If users provide the 6 -digit OTP in OTP tag and Y in Validate tag CKYC API will 
+validate the OTP and provide the response accordingly.  Only 3 invalid attempts will be 
+permitted.  
+ 
+To Resend OTP  
+  If empty value is provided in the OTP tag and Y in validate tag , then CKYC 
+system will retrigger OTP provided the number of attempts is not exhausted (3 
+attempts).  
+ <OTP></OTP>  
+ <VALIDATE>Y</VALIDATE>  
+
+===== PAGE 10 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 10 | Secured Download  API v1.3  
+Non -Confidential  Resend OTP option will be enabled only post  90 seconds . If RE tries  to resend OTP  
+before 90 seconds , then the  RE will get the error message “ Resend OTP will be 
+enabled after 90s from first request ” 
+1.3 Response  
+Response should be digitally signed using CERSAI’s Private Key and its public key will be 
+available to REs. Personal Identity Data (PID) should be encrypted using session key and 
+Session key should be encrypted using public key provided by RE so it can be decrypted  only 
+with RE’s private key. The encrypted PID and session key should be encoded to Base64 string. 
+Images will be sent as a Base64 encrypted string. Users can follow the below steps for 
+encryption.  
+ 
+1.3.1 Client side: - 
+• Verify signature using CERSAI’s public key.  
+• Parse key parameter from request message.  
+• Decode the session key from Base64 string.  
+• Decrypt the above  key using RE’s private key with RSA algorithm so we will get session 
+key.  
+• Decode the PID from Base64 string.  
+• Decrypt data using session key with AES algorithm.  
+  
+For V1.3, requests should be decrypted with 
+RSA/NONE/OAEPWithSHA256AndMGF1Padding algorithm.  
+ 
+1.3.2 Response Format for Individual: - 
+ 
+<?xml version="1.0" encoding="UTF -8"?>  
+<CKYC_DOWNLOAD_RESPONSE>  
+ <HEADER>  
+  <FI_CODE></FI_CODE>  
+  <REQUEST_ID></REQUEST_ID>  
+  <REQ_DATE></REQ_DATE>  
+  <VERSION></VERSION>  
+ </HEADER>  
+ <CKYC_INQ>  
+
+===== PAGE 11 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 11 | Secured Download  API v1.3  
+Non -Confidential    <SESSION_KEY> </SESSION_KEY>  
+  <PID>  
+   <PID_DATA>  
+                                             <RECORD_COUNT_DETAILS>  
+                                                         <DOWNLOAD_COUNT></DOWNLOAD_COUNT>  
+                                                         <UPDATE_COUNT></UPDATE_COUNT>  
+                                               </RECORD_COUNT_DETAILS>  
+    <PERSONAL_DETAILS>  
+     <CONSTI_TYPE></CONSTI_TYPE>  
+     <ACC_TYPE></ACC_TYPE>  
+     <CKYC_NO></CKYC_NO>  
+                                                                  <CKYC_REFERENCE_ID>< CKYC_REFERENCE_ID >  
+     <PREFIX></PREFIX>  
+     <FNAME></FNAME>  
+     <MNAME></MNAME>  
+     <LNAME></LNAME>  
+     <FULLNAME></FULLNAME>  
+     <MAIDEN_PREFIX></MAIDEN_PREFIX>  
+     <MAIDEN_FNAME></MAIDEN_FNAME>  
+     <MAIDEN_MNAME></MAIDEN_MNAME>  
+     <MAIDEN_LNAME></MAIDEN_LNAME>  
+     <MAIDEN_FULLNAME></MAIDEN_FULLNAME>  
+     <FATHERSPOUSE_FLAG></FATHERSPOUSE_FLAG>  
+     <FATHER_PREFIX></FATHER_PREFIX>  
+     <FATHER_FNAME></FATHER_FNAME>  
+     <FATHER_MNAME></FATHER_MNAME>  
+     <FATHER_LNAME></FATHER_LNAME>  
+     <FATHER_FULLNAME></FATHER_FULLNAME>  
+     <MOTHER_PREFIX></MOTHER_PREFIX>  
+
+===== PAGE 12 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 12 | Secured Download  API v1.3  
+Non -Confidential       <MOTHER_FNAME></MOTHER_FNAME>  
+     <MOTHER_MNAME></MOTHER_MNAME>  
+     <MOTHER_LNAME></MOTHER_LNAME>  
+     <MOTHER_FULLNAME></MOTHER_FULLNAME>  
+     <GENDER></GENDER>  
+     <DOB></DOB>  
+     <PAN></PAN>  
+     <FORM_SIXTY></FORM_SIXTY>  
+     <DIS_FLAG></DIS_FLAG>  
+<DIS_TYPE></DIS_TYPE>          
+<DIS_PERCENT></DIS_PERCENT>  
+<DIS_UDID_NUMBER>   </DIS_UDID_NUMBER>   
+<RESI_STATUS></RESI_STATUS>  
+     <PERM_LINE1></PERM_LINE1>  
+     <PERM_LINE2></PERM_LINE2>  
+     <PERM_LINE3></PERM_LINE3>  
+     <PERM_CITY></PERM_CITY>  
+     <PERM_DIST></PERM_DIST>  
+     <PERM_STATE></PERM_STATE>  
+     <PERM_COUNTRY></PERM_COUNTRY>  
+     <PERM_PIN></PERM_PIN>   
+     <PERM_POA></PERM_POA>  
+    
+ <PERM_CORRES_SAMEFLAG></PERM_CORRES_SAMEFLAG>  
+     <CORRES_LINE1></CORRES_LINE1>  
+     <CORRES_LINE2></CORRES_LINE2>  
+     <CORRES_LINE3></CORRES_LINE3>  
+     <CORRES_CITY></CORRES_CITY>  
+     <CORRES_DIST></CORRES_DIST>  
+
+===== PAGE 13 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 13 | Secured Download  API v1.3  
+Non -Confidential       <CORRES_STATE></CORRES_STATE>  
+     <CORRES_COUNTRY></CORRES_COUNTRY>  
+     <CORRES_PIN></CORRES_PIN>  
+     <CORRES_POA></CORRES_POA>  
+     <RESI_STD_CODE></RESI_STD_CODE>  
+     <RESI_TEL_NUM></RESI_TEL_NUM>  
+     <OFF_STD_CODE></OFF_STD_CODE>  
+     <OFF_TEL_NUM></OFF_TEL_NUM>  
+     <MOB_CODE></MOB_CODE>  
+     <MOB_NUM></MOB_NUM>  
+     <EMAIL></EMAIL>  
+     <REMARKS></REMARKS>  
+     <DEC_DATE></DEC_DATE>  
+     <DEC_PLACE></DEC_PLACE>  
+     <KYC_DATE></KYC_DATE>  
+     <DOC_SUB></DOC_SUB>  
+     <KYC_NAME></KYC_NAME>  
+     <KYC_DESIGNATION></KYC_DESIGNATION>  
+     <KYC_BRANCH></KYC_BRANCH>  
+     <KYC_EMPCODE></KYC_EMPCODE>  
+     <ORG_NAME></ORG_NAME>  
+     <ORG_CODE></ORG_CODE>  
+     <NUM_IDENTITY></NUM_IDENTITY>  
+     <NUM_RELATED></NUM_RELATED>  
+     <NUM_IMAGES></NUM_IMAGES>  
+                            </PERSONAL_DETAILS>  
+ 
+    <IDENTITY_DETAILS>  
+     <IDENTITY>  
+
+===== PAGE 14 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 14 | Secured Download  API v1.3  
+Non -Confidential        <SEQUENCE_NO>1</SEQUENCE_NO>  
+      <IDENT_TYPE></IDENT_TYPE>  
+      <IDENT_NUM></IDENT_NUM>  
+      <IDVER_STATUS></IDVER_STATUS>  
+     </IDENTITY>  
+     <IDENTITY>  
+      <SEQUENCE_NO>2</SEQUENCE_NO>  
+      <IDENT_TYPE></IDENT_TYPE>  
+      <IDENT_NUM></IDENT_NUM>  
+      <IDVER_STATUS></IDVER_STATUS>  
+     </IDENTITY>  
+    </IDENTITY_DETAILS>  
+ 
+    <RELATED_PERSON_DETAILS>  
+     <RELATED_PERSON>  
+      <SEQUENCE_NO></SEQUENCE_NO>  
+      <REL_TYPE></REL_TYPE>  
+      <ADD_DEL_FLAG></ADD_DEL_FLAG>  
+      <CKYC_NO></CKYC_NO>  
+      <PREFIX></PREFIX>  
+      <FNAME></FNAME>  
+      <MNAME></MNAME>  
+      <LNAME></LNAME>  
+      <MAIDEN_PREFIX></MAIDEN_PREFIX>  
+      <MAIDEN_FNAME></MAIDEN_FNAME>  
+      <MAIDEN_MNAME></MAIDEN_MNAME>  
+      <MAIDEN_LNAME></MAIDEN_LNAME>  
+     
+ <FATHERSPOUSE_FLAG></FATHERSPOUSE_FLAG>  
+
+===== PAGE 15 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 15 | Secured Download  API v1.3  
+Non -Confidential        <FATHER_PREFIX></FATHER_PREFIX>  
+      <FATHER_FNAME></FATHER_FNAME>  
+      <FATHER_MNAME></FATHER_MNAME>  
+      <FATHER_LNAME></FATHER_LNAME>  
+      <MOTHER_PREFIX></MOTHER_PREFIX>  
+      <MOTHER_FNAME></MOTHER_FNAME>  
+      <MOTHER_MNAME></MOTHER_MNAME>  
+      <MOTHER_LNAME></MOTHER_LNAME>  
+      <DOB></DOB>  
+      <GENDER></GENDER>  
+<PAN></PAN>  
+<FORM_SIXTY></FORM_SIXTY>  
+<RESI_STATUS></RESI_STATUS>  
+      <ADD_LINE1></ADD_LINE1>   
+      <ADD_LINE2></ADD_LINE2>  
+      <ADD_LINE3></ADD_LINE3>  
+      <ADD_CITY></ADD_CITY>  
+      <ADD_DIST></ADD_DIST>  
+      <ADD_STATE></ADD_STATE>  
+      <ADD_COUNTRY></ADD_COUNTRY>  
+      <ADD_PIN></ADD_PIN>  
+      <PERM_POI_TYPE></PERM_POI_TYPE>  
+                                                                                     
+<SAME_AS_PERM_FLAG></  SAME_AS_PERM_FLAG>  
+<CORRES_ADD_LINE1></CORRES_ADD_LINE1>  
+      <CORRES_ADD_LINE2></CORRES_ADD_LINE2>  
+      <CORRES_ADD_LINE3></CORRES_ADD_LINE3>  
+      <CORRES_ADD_CITY></CORRES_ADD_CITY>  
+      <CORRES_ADD_DIST></CORRES_ADD_DIST>  
+             
+
+===== PAGE 16 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 16 | Secured Download  API v1.3  
+Non -Confidential        <CORRES_ADD_STATE></CORRES_ADD_STATE>  
+             
+      <CORRES_ADD_COUNTRY>  
+      </CORRES_ADD_COUNTRY>  
+      <CORRES_ADD_PIN></CORRES_ADD_PIN>  
+      <CORRES_POI_TYPE></CORRES_POI_TYPE>  
+      <RESI_STD_CODE></RESI_STD_CODE>  
+      <RESI_TEL_NUM></RESI_TEL_NUM>  
+      <OFF_STD_CODE></OFF_STD_CODE>  
+      <OFF_TEL_NUM></OFF_TEL_NUM>  
+      <MOB_CODE></MOB_CODE>  
+      <MOB_NUM></MOB_NUM>     
+      <EMAIL></EMAIL>  
+      <REMARKS></REMARKS>  
+      <PHOTO_TYPE></PHOTO_TYPE>  
+      <PHOTO_DATA></PHOTO_DATA>    
+                 
+      <PERM_POI_IMAGE_TYPE>  
+      </PERM_POI_IMAGE_TYPE>  
+      <PERM_POI_DATA></PERM_POI_DATA>  
+      <CORRES_POI_IMAGE_TYPE>  
+      </CORRES_POI_IMAGE_TYPE>   
+      <CORRES_POI_DATA></CORRES_POI_DATA>  
+  
+      <PROOF_OF_POSSESSION_OF_AADHAAR>  
+      </PROOF_OF_POSSESSION_OF_AADHAAR >  
+      <VOTERID></VOTERID>  
+      <NREGA></NREGA>  
+      <PASSPORT></PASSPORT>  
+< FOREIGN_NATIONAL_ID></FOREIGN_NATIONAL_ID>  
+
+===== PAGE 17 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 17 | Secured Download  API v1.3  
+Non -Confidential        <DRIVING_LICENCE></DRIVING_LICENCE>  
+  
+      <NATIONAL_POPULATION_REG_LETTER>  
+      </NATIONAL_POPULATION_REG_LETTER  
+      <OFFLINE_VERIFICATION_AADHAAR>  
+      </OFFLINE_VERIFICATION_AADHAAR>  
+      <E_KYC_AUTHENTICATION>  
+      </E_KYC_AUTHENTICATION>  
+      <DEC_DATE></DEC_DATE>  
+      <DEC_PLACE></DEC_PLACE>  
+      <KYC_DATE></KYC_DATE>  
+      <DOC_SUB></DOC_SUB>  
+      <KYC_NAME></KYC_NAME>  
+      <KYC_DESIGNATION></KYC_DESIGNATION>  
+      <KYC_BRANCH></KYC_BRANCH>  
+      <KYC_EMPCODE></KYC_EMPCODE>  
+      <ORG_NAME></ORG_NAME>  
+      <ORG_CODE></ORG_CODE>  
+     </RELATED_PERSON>  
+ 
+     <RELATED_PERSON>  
+      <SEQUENCE_NO></SEQUENCE_NO>  
+      <REL_TYPE></REL_TYPE>  
+      <ADD_DEL_FLAG></ADD_DEL_FLAG>  
+      <CKYC_NO></CKYC_NO>  
+      <PREFIX></PREFIX>  
+      <FNAME></FNAME>  
+      <MNAME></MNAME>  
+      <LNAME></LNAME>  
+
+===== PAGE 18 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 18 | Secured Download  API v1.3  
+Non -Confidential        <MAIDEN_PREFIX></MAIDEN_PREFIX>  
+      <MAIDEN_FNAME></MAIDEN_FNAME>  
+      <MAIDEN_MNAME></MAIDEN_MNAME>  
+      <MAIDEN_LNAME></MAIDEN_LNAME>  
+     
+ <FATHERSPOUSE_FLAG></FATHERSPOUSE_FLAG>  
+      <FATHER_PREFIX></FATHER_PREFIX>  
+      <FATHER_FNAME></FATHER_FNAME>  
+      <FATHER_MNAME></FATHER_MNAME>  
+      <FATHER_LNAME></FATHER_LNAME>  
+      <MOTHER_PREFIX></MOTHER_PREFIX>  
+      <MOTHER_FNAME></MOTHER_FNAME>  
+      <MOTHER_MNAME></MOTHER_MNAME>  
+      <MOTHER_LNAME></MOTHER_LNAME>  
+      <DOB></DOB>  
+      <GENDER></GENDER>  
+<PAN></PAN>  
+<FORM_SIXTY></FORM_SIXTY>  
+<RESI_STATUS></RESI_STATUS>  
+      <ADD_LINE1></ADD_LINE1>   
+      <ADD_LINE2></ADD_LINE2>  
+      <ADD_LINE3></ADD_LINE3>  
+      <ADD_CITY></ADD_CITY>  
+      <ADD_DIST></ADD_DIST>  
+      <ADD_STATE></ADD_STATE>  
+      <ADD_COUNTRY></ADD_COUNTRY>  
+      <ADD_PIN></ADD_PIN>     
+             
+      <PERM_POI_TYPE></PERM_POI_TYPE>  
+                                                                               <SAME_AS_PERM_FLAG></  SAME_AS_PERM_FLAG>  
+
+===== PAGE 19 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 19 | Secured Download  API v1.3  
+Non -Confidential        <CORRES_ADD_LINE1></CORRES_ADD_LINE1>  
+      <CORRES_ADD_LINE2></CORRES_ADD_LINE2>  
+      <CORRES_ADD_LINE3></CORRES_ADD_LINE3>  
+      <CORRES_ADD_CITY></CORRES_ADD_CITY>  
+      <CORRES_ADD_DIST></CORRES_ADD_DIST>  
+             
+      <CORRES_ADD_STATE></CORRES_ADD_STATE>  
+             
+      <CORRES_ADD_COUNTRY>  
+      </CORRES_ADD_COUNTRY>  
+      <CORRES_ADD_PIN></CORRES_ADD_PIN>  
+      <CORRES_POI_TYPE></CORRES_POI_TYPE>  
+      <RESI_STD_CODE></RESI_STD_CODE>  
+      <RESI_TEL_NUM></RESI_TEL_NUM>  
+      <OFF_STD_CODE></OFF_STD_CODE>  
+      <OFF_TEL_NUM></OFF_TEL_NUM>  
+      <MOB_CODE></MOB_CODE>  
+      <MOB_NUM></MOB_NUM>     
+      <EMAIL></EMAIL>  
+      <REMARKS></REMARKS>  
+      <PHOTO_TYPE></PHOTO_TYPE>  
+      <PHOTO_DATA></PHOTO_DATA>  
+      <PERM_POI_IMAGE_TYPE>  
+      </PERM_POI_IMAGE_TYPE>  
+      <PERM_POI_DATA></PERM_POI_DATA>  
+      <CORRES_POI_IMAGE_TYPE>  
+      </CORRES_POI_IMAGE_TYPE>   
+      <CORRES_POI_DATA></CORRES_POI_DATA>  
+  
+      <PROOF_OF_POSSESSION_OF_AADHAAR>  
+      </PROOF_OF_POSSESSION_OF_AADHAAR >  
+
+===== PAGE 20 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 20 | Secured Download  API v1.3  
+Non -Confidential        <VOTERID></VOTERID>  
+      <NREGA></NREGA>  
+      <PASSPORT></PASSPORT>  
+< FOREIGN_NATIONAL_ID></FOREIGN_NATIONAL_ID>  
+      <DRIVING_LICENCE></DRIVING_LICENCE>  
+      <NATIONAL_POPULATION_REG_LETTER>  
+      </NATIONAL_POPULATION_REG_LETTER  
+      <OFFLINE_VERIFICATION_AADHAAR>  
+      </OFFLINE_VERIFICATION_AADHAAR>  
+      <E_KYC_AUTHENTICATION>  
+      </E_KYC_AUTHENTICATION>  
+      <DEC_DATE></DEC_DATE>  
+      <DEC_PLACE></DEC_PLACE>  
+      <KYC_DATE></KYC_DATE>  
+      <DOC_SUB></DOC_SUB>  
+      <KYC_NAME></KYC_NAME>  
+      <KYC_DESIGNATION></KYC_DESIGNATION>  
+      <KYC_BRANCH></KYC_BRANCH>  
+      <KYC_EMPCODE></KYC_EMPCODE>  
+      <ORG_NAME></ORG_NAME>  
+      <ORG_CODE></ORG_CODE>  
+     </RELATED_PERSON>  
+    </RELATED_PERSON_DETAILS>  
+     
+    <IMAGE_DETAILS>  
+     <IMAGE>  
+      <SEQUENCE_NO></SEQUENCE_NO  
+      <IMAGE_TYPE></IMAGE_TYPE>  
+      <IMAGE_CODE></IMAGE_CODE>  
+
+===== PAGE 21 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 21 | Secured Download  API v1.3  
+Non -Confidential        <GLOBAL_FLAG></GLOBAL_FLAG>  
+      <BRANCH_CODE></BRANCH_CODE>  
+      <IMAGE_DATA></IMAGE_DATA>  
+     </IMAGE>  
+     <IMAGE>  
+                                   <SEQUENCE_NO></SEQUENCE_NO  
+      <IMAGE_TYPE></IMAGE_TYPE>  
+      <IMAGE_CODE></IMAGE_CODE>  
+      <GLOBAL_FLAG></GLOBAL_FLAG>  
+      <BRANCH_CODE></BRANCH_CODE>  
+      <IMAGE_DATA></IMAGE_DATA>  
+     </IMAGE>  
+    </IMAGE_DETAILS>  
+   </PID_DATA>  
+  </PID>  
+  <ERROR></ERROR>  
+ </CKYC_INQ>  
+</CKYC_DOWNLOAD_RESPONSE>  
+2.3.3  Response Format failure cases V1.3: - 
+ 
+If OTP validation fails, then RE’s will get the below response . 
+<HEADER>  
+        <FI_CODE> </FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+    </HEADER>  
+    <CKYC_INQ>  
+        <ERROR> Invalid  OTP entered. Remaining attempts: <count>  </ERROR>  
+    </CKYC_INQ>  
+ 
+If RE’s provided with the resend OTP option, then RE’s will get the response below.  
+
+===== PAGE 22 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 22 | Secured Download  API v1.3  
+Non -Confidential  <HEADER>  
+        <FI_CODE> </FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+    </HEADER>  
+    <CKYC_INQ>  
+        <ERROR> OTP re-sent successfully to registered Mobile number 
+<masked_Registered_Mobile_number>. Remaining attempts= <Count> </ERROR>  
+    </CKYC_INQ>  
+ 
+ 
+If RE send s the resend OTP option, before 90 sec of the first attempt.  
+<HEADER>  
+        <FI_CODE> </FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+    </HEADER>  
+    <CKYC_INQ>  
+        <ERROR> Resend OTP will be enabled after 90s from first request  </ERROR>  
+    </CKYC_INQ>  
+ 
+In resend OTP option, if the OTP is validated successfully then the user will get the success 
+response as below  
+User will get success response as per the format provided in 1.3.2 Response 
+Format for Individual  
+If the RE’s has exceeded the max attempts of resend OTP  
+<HEADER>  
+        <FI_CODE> </FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+    </HEADER>  
+    <CKYC_INQ>  
+        <ERROR> Download failed. Number of attempts to resend OTP exceeded 
+<limit></ERROR>  
+    </CKYC_INQ>  
+
+===== PAGE 23 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 23 | Secured Download  API v1.3  
+Non -Confidential  If OTP validation fails and number of attempts also exceed then user will get the below 
+response  
+<HEADER>  
+        <FI_CODE> </FI_CODE>  
+<REQUEST_ID></REQUEST_ID>  
+ <VERSION></VERSION>  
+    </HEADER>  
+    <CKYC_INQ>  
+        <ERROR> Download failed as OTP validation was unsuccessful </ERROR>  
+    </CKYC_INQ>  
+ 
+1.3.4 Response Format for Legal Entity: - 
+ 
+?xml version="1.0" encoding="UTF -8"?>  
+ 
+<CKYC_DOWNLOAD_RESPONSE>  
+ <HEADER>  
+  <FI_CODE></FI_CODE>  
+  <REQUEST_ID></REQUEST_ID>  
+  <REQ_DATE></REQ_DATE>  
+  <VERSION></VERSION>  
+ </HEADER>  
+ <CKYC_INQ>  
+  <SESSION_KEY> </SESSION_KEY>  
+  <PID>  
+   <PID_DATA>  
+                                             <RECORD_COUNT_DETAILS>  
+                                                         <DOWNLOAD_COUNT></DOWNLOAD_COUNT>  
+                                                         <UPDATE_COUNT></UPDATE_COUNT>  
+                                               </RECORD_COUNT_DETAILS>  
+    <PERSONAL_DETAILS>  
+
+===== PAGE 24 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 24 | Secured Download  API v1.3  
+Non -Confidential  <CONSTI_TYPE></CONSTI_TYPE>  
+<CONSTI_TYPE_OTHERS></CONSTI_TYPE_OTHERS>  
+<CKYC_NO></CKYC_NO>  
+<CKYC_REFERENCE_ID></CKYC_REFERENCE_ID>  
+<FULLNAME></FULLNAME>  
+<DOB></DOB>  
+<PLACE_INC></PLACE_INC>  
+<DATE_COMM_BUS></DATE_COMM_BUS>  
+<COUN_INC></COUN_INC>  
+< TIN_GST></TIN_GST>  
+<TIN_COUN></TIN_COUN>  
+<PAN></PAN>  
+or 
+<FORM_SIXTY></FORM_SIXTY>  
+<PERM_LINE1></PERM_LINE1>  
+<PERM_LINE2></PERM_LINE2>  
+<PERM_LINE3></PERM_LINE3>  
+      <PERM_CITY></PERM_CITY>  
+     <PERM_DIST></PERM_DIST>  
+ <PERM_STATE></PERM_STATE>  
+<PERM_COUNTRY></PERM_COUNTRY>  
+      <PERM_PIN></PERM_PIN>  
+                  <PERM_POA></PERM_POA>  
+<PERM_POAOTHERS></  > 
+<PERM_CORRES_SAMEFLAG></PERM_CORRES_SAMEFLAG>  
+<CORRES_LINE1></CORRES_LINE1>  
+<CORRES_LINE2></CORRES_LINE2>  
+<CORRES_LINE3></CORRES_LINE3>  
+<CORRES_CITY></CORRES_CITY>  
+
+===== PAGE 25 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 25 | Secured Download  API v1.3  
+Non -Confidential  <CORRES_DIST></CORRES_DIST>  
+<CORRES_STATE></CORRES_STATE>  
+<CORRES_COUNTRY></CORRES_COUNTRY>  
+<CORRES_PIN></CORRES_PIN>  
+<CORRES_POA></CORRES_POA>  
+<PROOF_ADDRESS></PROOF_ADDRESS>  
+<RESI_STD_CODE></RESI_STD_CODE>  
+<RESI_TEL_NUM</RESI_TEL_NUM>  
+<OFF_STD_CODE></OFF_STD_CODE>  
+<OFF_TEL_NUM></OFF_TEL_NUM>  
+<FAX_CODE></FAX_CODE>  
+<FAX_NO>< /FAX_NO> 
+<MOB_CODE1></MOB_CODE1>  
+<MOB_NUM1></MOB_NUM1>  
+<MOB_CODE2></MOB_CODE2>  
+<MOB_NUM2></MOB_NUM2>  
+<EMAIL></EMAIL>  
+<EMAIL2></EMAIL2>  
+<REMARKS></REMARKS>  
+<DEC_DATE></DEC_DATE>  
+<DEC_PLACE></DEC_PLACE>  
+<KYC_DATE></KYC_DATE>  
+<DOC_SUB></DOC_SUB>  
+<IPV_FLAG></IPV_FLAG>  
+<KYC_NAME></KYC_NAME>  
+<KYC_DESIGNATION></KYC_DESIGNATION>  
+<KYC_BRANCH></KYC_BRANCH>  
+<KYC_EMPCODE></KYC_EMPCODE>  
+<ORG_NAME></ORG_NAME>  
+
+===== PAGE 26 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 26 | Secured Download  API v1.3  
+Non -Confidential  <ORG_CODE></ORG_CODE>  
+<NUM_IDENTITY></NUM_IDENTITY>  
+<NUM_RELATED></NUM_RELATED>  
+<NUM_IMAGES></NUM_IMAGES>  
+</PERSONAL_DETAILS>  
+ 
+<IDENTITY_DETAILS>  
+<IDENTITY>  
+<SEQUENCE_NO></SEQUENCE_NO>  
+<IDENT_TYPE></IDENT_TYPE>  
+<IDENT_NUM></IDENT_NUM>  
+</IDENTITY>  
+</IDENTITY_DETAILS>  
+<RELATED_PERSON_DETAILS>  
+<RELATED_PERSON>  
+<SEQUENCE_NO></SEQUENCE_NO>  
+<REL_TYPE></REL_TYPE>  
+<ADD_DEL_FLAG></ADD_DEL_FLAG>  
+<CKYC_NO></CKYC_NO>  
+<PREFIX></PREFIX>  
+<FNAME></FNAME>  
+<MNAME></MNAME>  
+<LNAME></LNAME>  
+<MAIDEN_PREFIX></MAIDEN_PREFIX>  
+<MAIDEN_FNAME></MAIDEN_FNAME>  
+<MAIDEN_MNAME></MAIDEN_MNAME>  
+<MAIDEN_LNAME></MAIDEN_LNAME>  
+<FATHERSPOUSE_FLAG></FATHERSPOUSE_FLAG>  
+<FATHER_PREFIX></FATHER_PREFIX>  
+
+===== PAGE 27 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 27 | Secured Download  API v1.3  
+Non -Confidential  <FATHER_FNAME></FATHER_FNAME>  
+<FATHER_MNAME></FATHER_MNAME>  
+<FATHER_LNAME></FATHER_LNAME>  
+<MOTHER_PREFIX></MOTHER_PREFIX>  
+<MOTHER_FNAME>  
+</MOTHER_FNAME>  
+<MOTHER_MNAME></MOTHER_MNAME>  
+<MOTHER_LNAME></MOTHER_LNAME>  
+<DOB></DOB>  
+<GENDER></GENDER>  
+<NATIONALITY></NATIONALITY>  
+<PAN></PAN> or  
+<FORM_SIXTY></FORM_SIXTY>  
+<DIS_FLAG></DIS_FLAG>  
+<DIS_TYPE></DIS_TYPE>          
+<DIS_PERCENT></DIS_PERCENT>  
+<DIS_UDID_NUMBER></DIS_UDID_NUMBER>  
+<RESI_STATUS></RESI_STATUS>  
+<ADD_LINE1></ADD_LINE1>  
+<ADD_LINE2></ADD_LINE2>  
+<ADD_LINE3></ADD_LINE3>  
+<ADD_CITY></ADD_CITY>  
+<ADD_DISTRICT></ADD_DISTRICT>  
+<ADD_STATE></ADD_STATE>  
+<ADD_COUNTRY></ADD_COUNTRY>  
+<ADD_PIN></ADD_PIN>  
+<PERM_POI_TYPE></PERM_POI_TYPE>  
+<SAME_AS_PERM_FLAG></SAME_AS_PERM_FLAG>  
+<CORRES_ADD_LINE1></CORRES_ADD_LINE1>  
+
+===== PAGE 28 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 28 | Secured Download  API v1.3  
+Non -Confidential  <CORRES_ADD_LINE2></CORRES_ADD_LINE2>  
+<CORRES_ADD_LINE3></CORRES_ADD_LINE3>  
+<CORRES_ADD_CITY></CORRES_ADD_CITY>  
+<CORRES_ADD_DISTRICT></CORRES_ADD_DISTRICT>  
+<CORRES_ADD_STATE></CORRES_ADD_STATE>  
+<CORRES_ADD_COUNTRY>  
+</CORRES_ADD_COUNTRY>  
+<CORRES_ADD_PIN></CORRES_ADD_PIN>  
+<CORRES_POI_TYPE></CORRES_POI_TYPE>  
+<RESI_STD_CODE></RESI_STD_CODE>  
+ 
+<RESI_TEL_NUM></RESI_TEL_NUM>  
+ 
+<OFF_STD_CODE></OFF_STD_CODE>  
+ 
+<OFF_TEL_NUM></OFF_TEL_NUM>  
+ 
+<MOB_CODE></MOB_CODE>  
+ 
+<MOB_NUM></MOB_NUM>  
+ 
+<EMAIL></EMAIL>  
+ 
+<REMARKS></REMARKS>  
+ 
+<PHOTO_TYPE></PHOTO_TYPE>  
+ 
+<PHOTO_DATA></PHOTO_DATA> <PERM_POI_IMAGE_TYPE>  
+ 
+</PERM_POI_IMAGE_TYPE>  
+ 
+<PERM_POI_DATA></PERM_POI_DATA>  
+ 
+<CORRES_POI_IMAGE_TYPE>  
+ 
+</CORRES_POI_IMAGE_TYPE>  
+ 
+<CORRES_POI_DATA></CORRES_POI_DATA>  
+ 
+<PROOF_OF_POSSESSION_OF_AADHAAR>  
+
+===== PAGE 29 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 29 | Secured Download  API v1.3  
+Non -Confidential   
+</PROOF_OF_POSSESSION_OF_AADHAAR >  
+ 
+<VOTERID></VOTERID>  
+ 
+<NREGA></NREGA>  
+ 
+<PASSPORT></PASSPORT>  
+< FOREIGN_NATIONAL_ID></FOREIGN_NATIONAL_ID>  
+ 
+<DRIVING_LICENCE></DRIVING_LICENCE>  
+ 
+<NATIONAL_POPULATION_REG_LETTER>  
+ 
+</NATIONAL_POPULATION_REG_LETTER>  
+ 
+<OFFLINE_VERIFICATION_AADHAAR>  
+ 
+</OFFLINE_VERIFICATION_AADHAAR>  
+ 
+<E_KYC_AUTHENTICATION>  
+ 
+</E_KYC_AUTHENTICATION>  
+<DEC_DATE></DEC_DATE>  
+<DEC_PLACE></DEC_PLACE>  
+<KYC_DATE></KYC_DATE>  
+<DOC_SUB></DOC_SUB>  
+<KYC_NAME></KYC_NAME>  
+<KYC_DESIGNATION></KYC_DESIGNATION>  
+<KYC_BRANCH></KYC_BRANCH>  
+<KYC_EMPCODE></KYC_EMPCODE>  
+<ORG_NAME></ORG_NAME>  
+<ORG_CODE></ORG_CODE>  
+<DIN></DIN>  
+<REL_TYPE_OTHERS ></REL_TYPE_OTHERS > 
+</RELATED_PERSON>  
+</RELATED_PERSON_DETAILS>  
+
+===== PAGE 30 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 30 | Secured Download  API v1.3  
+Non -Confidential  <IMAGE_DETAILS>  
+<IMAGE>  
+<SEQUENCE_NO></SEQUENCE_NO>  
+<IMAGE_TYPE></IMAGE_TYPE>  
+<IMAGE_CODE></IMAGE_CODE>  
+<IMAGE_DATA></IMAGE_DATA>  
+</IMAGE>  
+</IMAGE_DETAILS>  
+</PID_DATA  
+</PID>  
+<ERROR></ERROR>  
+ </CKYC_INQ>  
+</CKYC_DOWNLOAD_RESPONSE>  
+2.1 Web Services Details  
+ 
+2.1.1 Request Parameters  
+The following table provides details on CKYC Download -Request Parameters:  
+ 
+CKYC Download -Request 
+Parameters Field Name  Description  Mandatory  
+FI_CODE  FI code provided by CKYC  Yes 
+DATE  Current date (dd -MM-yyyy HH:mm:ss)  Yes 
+VERSION  1.3 Yes 
+CKYC_NO  14-digit CKYC Number /14-digit Alphanumeric  
+Reference ID  Yes 
+AUTH_FACTOR_TYPE  For Individual Records:  
+'03' - Mobile Number  
+ 
+For Legal Entity Records:  
+''01' - Date of Incorporation  
+'03' - Mobile 1 / Mobile 2 (wef 31 July 2025)  
+'04' - Email 1 / Email 2 (wef 31 July 2025)  Yes 
+
+===== PAGE 31 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 31 | Secured Download  API v1.3  
+Non -Confidential  '05' - Pin code (registered or local) (wef 31 July 
+2025)  
+AUTH_FACTOR  For Individual Records:  
+if authentication factor is '0 3' - Mobile number 
+(Only 10-digit mobile numbers)  
+ 
+For Legal Entity Records:  
+if authentication factor is '01' - 'DD-MM-YYYY'  
+if '03' - Mobile number (Only 10-digit mobile 
+numbers)  
+if '04' - Email ID (wef 31 July 2025)  
+if '05' - Pincode (permanent or correspondence) 
+(wef 31 July 2025)  Yes 
+REQUEST_ID  Should be unique throughout the day for an FI.  Yes 
+ 
+ 
+Note:  
+The prefix must not be included when provided the CKYC number/ CKYC reference ID in the 
+“CKYC_NO” tag . In the download request only the 14-digit CKYC number or CKYC reference 
+ID must be provided.  
+i. Format of CKYC Number/Identifier - (prefix)NNNNNNNNNNNNNN  
+• where N is a numeric value  
+• where the first digit between 1 to 6 denotes the KYC customer type is “Individual”  
+• where the first digit between 7 to 9 denotes the KYC customer type is “Legal entity”  
+ 
+ii. Format of CKYC Reference ID - (prefix)INAAAANNNNNNNN  
+• where A is an alphabet and N is a numeric value  
+ 
+iii. Prefix values indicate the account type of the KYC record. The values provided will be as fol-
+lows:  
+Prefix  Account type  
+S Small Account  
+L Simplified Account  
+O OTP based eKYC Ac-
+counts  
+M Minor Accounts  
+
+
+===== PAGE 32 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 32 | Secured Download  API v1.3  
+Non -Confidential   
+2.1.2 Response Parameters for Individual:  
+The following table provides details on CKYC Download -Response Parameters:  
+ 
+S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+Record Count Details < RECORD_COUNT_DETAILS>  
+1.  Count of 
+download of 
+record in the 
+last 5 years  Number  20 Mandatory  01-Individual  DOWNLOAD_COUN
+T 
+2.  Count of 
+update of 
+record in the 
+last 5 years  Number  20 Mandatory  01-Individual  UPDATE_COUNT  
+Personal Details< Personal  _DETAILS>(corresponding to 20 type record in bulk file 
+format, single per KYC record)  
+3.  Constitution 
+Type  String  2 Mandatory  01-Individual  CONSTI_TYPE  
+4.  Account 
+Holder Type  Number  2 Mandatory  01-Normal  
+02-Small  
+03-Simplified (for 
+low-risk 
+customers)  
+04-OTP-Based e-
+KYC  ACC_TYPE  
+5.  CKYC no  Number  14 Mandatory   CKYC_NO  
+6.  CKYC 
+Reference ID  Alphanum
+eric  14 Mandatory   CKYC_REFERENCE_
+ID 
+7.  Applicant 
+Name Prefix  String  5 Mandatory   PREFIX  
+8.  Applicant 
+First Name  String  
+ 50 Mandatory   FNAME  
+9.  Applicant 
+Middle Name  String  50 Optional   MNAME  
+10.  Applicant 
+Last Name  String  
+ 50 Optional   LNAME  
+
+===== PAGE 33 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 33 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+11.  Applicant Full 
+Name  String  158  Mandatory   FULLNAME  
+12.  Applicant 
+Maiden 
+Name Prefix  String  5 Optional   MAIDEN_PREFIX  
+13.  Applicant 
+Maiden First 
+Name  String  50 Optional   MAIDEN_FNAME  
+14.  Applicant 
+Maiden 
+Middle Name  String  50 Optional   MAIDEN_MNAME  
+15.  Applicant 
+Maiden Last 
+Name  
+ String  50 Optional   MAIDEN_LNAME  
+16.  Applicant 
+Maiden Full 
+Name  String  158  Optional   MAIDEN_FULLNAM
+E 
+17.  Flag 
+indicating 
+Father or 
+Spouse 
+Name  Number  
+ 2 Mandatory  ''01' - Father 
+Name  
+'02' - Spouse 
+Name  FATHERSPOUSE_FL
+AG 
+18.  Applicant 
+Father/Spous
+e Name 
+Prefix  String  5 Mandatory   FATHER_PREFIX  
+19.  Father / 
+Spouse First 
+Name  String  50 Mandatory   FATHER_FNAME  
+20.  Father / 
+Spouse 
+Middle Name  String  50 Optional   FATHER_MNAME  
+21.  Father / 
+Spouse Last 
+Name  String  50 Optional   FATHER_LNAME  
+
+===== PAGE 34 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 34 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+22.  Father / 
+Spouse Full 
+Name  String  158  Mandatory   FATHER_FULLNAME  
+23.  Mother’s 
+Prefix  String  5 Mandatory   MOTHER_PREFIX  
+24.  Mother's First 
+Name  String  50 Mandatory   MOTHER_FNAME  
+25.  Mother's 
+Middle Name  String  50 Optional   MOTHER_MNAME  
+26.  Mother’s Last 
+Name  String  50 Optional   MOTHER_LNAME  
+27.  Mother's Full 
+Name  String  158  Mandatory   MOTHER_FULLNAM
+E 
+28.  Gender  String  1 Mandatory  ‘M’ – Male,  
+‘F’ – Female,  
+'T'- Transgender  GENDER  
+29.  Date of Birth/ 
+Date of 
+Incorporation  Date  10 Mandatory  'DD-MM-YYYY  DOB  
+30.  PAN  PAN 
+Number  10 PAN or Form 
+60 is 
+Mandatory   PAN  
+31.  Form 60 
+Submitted  String   PAN or Form 
+60 is 
+Mandatory   FORM_SIXTY  
+32.  Differently 
+Abled Status  Boolean  1 Mandatory  0 - false  
+1 - true  DIS_FLAG  
+33.  Type of 
+Impairment  Number  2 Optional  Refer Type of 
+Impairment in 
+Bulk file format  DIS_TYPE  
+34.  Percentage of 
+Impairment  Number  3 Optional   DIS_PERCENT  
+35.  UDID Number  String  20 Optional  UDID number  DIS_UDID_NUMBER  
+36.  Residential 
+Status  String  2 Mandatory  ‘01’ – Resident 
+Individual  RESI_STATUS  
+
+===== PAGE 35 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 35 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+‘02’ – Non-
+Resident Indian  
+‘03’ - Foreign 
+National  
+'04' - Person of 
+Indian Origin  
+37.  Current/ 
+Permanent/ 
+Overseas 
+Address Line 
+1 String  55 Mandatory   PERM_LINE1  
+38.  Current/ 
+Permanent/ 
+Overseas 
+Address Line  
+2 String  55 Optional   PERM_LINE2  
+39.  Current/ 
+Permanent/ 
+Overseas 
+Address Line 
+3 String  55 Optional   PERM_LINE3  
+40.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+City / Town / 
+Village  String  50 Mandatory   PERM_CITY  
+41.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+District  String  50 Mandatory   PERM_DIST  
+42.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+State/ U. T  String  2 Mandatory  Refer State 
+Master in Bulk file 
+formats  PERM_STATE  
+
+===== PAGE 36 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 36 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+43.  Current / 
+Permanent / 
+Overseas 
+Address - 
+Country  
+ String  2 Mandatory  Refer ISO 3166 
+country code in 
+Bulk file formats  PERM_COUNTRY  
+44.  Current / 
+Permanent / 
+Overseas 
+Address - PIN 
+Code  String  10 Mandatory/O
+ptional  Should be 6 digits 
+if Country 
+selected is 'India'  
+Not mandatory if 
+country is not 
+India  PERM_PIN  
+45.  Proof of 
+Address 
+submitted for 
+Current/ 
+Permanent/ 
+Overseas 
+Address  String  3 Mandatory  Proof of Address 
+Master  PERM_POA  
+46.  Flag 
+indicating if 
+Current / 
+Permanent / 
+Overseas 
+Address is 
+same as 
+corresponde
+nce/ local 
+Address  String  1 Mandatory  'Y' / 'N'  PERM_CORRES_SA
+MEFLAG  
+47.  Corresponde
+nce/ Local 
+Address   Line 
+1 String  55 Mandatory/O
+ptional  Mandatory if Flag 
+indicating Current 
+/ Permanent / 
+Overseas Address 
+is same as 
+correspondence/ 
+local Address is 
+'N' CORRES_LINE1  
+48.  Corresponde
+nce/ Local String  55 Optional   CORRES_LINE2  
+
+===== PAGE 37 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 37 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+Address Line 
+2 
+49.  Corresponde
+nce/ Local 
+Address Line 
+3 String  55 Optional   CORRES_LINE3  
+50.  Corresponde
+nce/ Local 
+Address - 
+City / Town / 
+Village  String  50 Mandatory /  
+Optional   CORRES_CITY  
+51.  Corresponde
+nce/ Local 
+Address - 
+District  String  50 Mandatory /  
+Optional   CORRES_DIST  
+52.  Corresponde
+nce/ Local 
+Address – 
+State  String  2 Mandatory /  
+Optional  Refer State 
+Master in Bulk file 
+formats  CORRES_STATE  
+53.  Corresponde
+nce/ Local 
+Address – 
+Country  String  2 Mandatory /  
+Optional  Refer ISO 3166 
+country code in 
+Bulk file formats  CORRES_COUNTRY  
+54.  Corresponde
+nce/ Local 
+Address - PIN 
+Code  String  10 Mandatory/O
+ptional  Should be 6 digits 
+if Country 
+selected is 'India'  CORRES_PIN  
+55.  Proof of 
+Address 
+submitted for 
+Current 
+Address  Number  03 Mandatory /  
+Optional   CORRES_POA  
+56.  Residence 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   RESI_STD_CODE  
+
+===== PAGE 38 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 38 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+57.  Residence 
+Telephone 
+No. Number  
+ 10 Optional   RESI_TEL_NUM  
+58.  Office 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   OFF_STD_CODE  
+59.  Office 
+Telephone 
+No. Number  
+ 10 Optional   OFF_TEL_NUM  
+60.  Mobile No. 
+(ISD Code)  Number  
+ 3 Optional   MOB_CODE  
+61.  Mobile No.  Number  
+ 20 Optional   MOB_NUM  
+62.  Email ID  String  100  Optional   EMAIL  
+63.  Remarks, if 
+any  String  300  Optional   REMARKS  
+64.  Date of 
+Declaration  Date  10 Mandatory  DD-MM-YYYY  DEC_DATE  
+65.  Place of 
+Declaration  String  50 Mandatory   DEC_PLACE  
+66.  KYC 
+Verification 
+Date  Date  10 Mandatory  DD-MM-YYYY  KYC_DATE  
+67.  Type of 
+Document 
+Submitted  String  2 Mandatory  01- Certified 
+Copies  DOC_SUB  
+68.  KYC 
+Verification 
+Name  String  150  Mandatory   KYC_NAME  
+69.  KYC 
+Verification 
+Designation  String  50 Mandatory   KYC_DESIGNATION  
+70.  KYC 
+Verification 
+Branch  String  50 Mandatory   KYC_BRANCH  
+
+===== PAGE 39 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 39 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+71.  KYC 
+Verification 
+EMP code  String  50 Mandatory   KYC_EMPCODE  
+72.  Organization 
+Name  String  150  Mandatory   ORG_NAME  
+73.  Organization 
+Code  String  20 Mandatory   ORG_CODE  
+74.  Number of 
+Identity 
+Details  Number  2  
+Mandatory  Number of 
+type(identity) '30' 
+records  NUM_IDENTITY  
+75.  Number of 
+related 
+persons  Number  2 Mandatory  Number of type 
+'40' records  NUM_RELATED  
+76.  Number of 
+Images  Number  2 Mandatory  Number of type 
+'70' records  NUM_IMAGES  
+Identity Details <IDENTITY_DETAILS>(corresponding to 30 type record in bulk file 
+format, Multiple per KYC record)  
+77.  Identity 
+sequence 
+number   Number  2 Mandatory   SEQUENCE_NO  
+78.  Identification 
+type  
+ String  2 Mandatory  Refer 
+identification 
+master in bulk file 
+format  IDENT_TYPE  
+79.  Identity 
+Number  
+ Number  As 
+per 
+Ident
+ity 
+Cod
+e 
+mast
+er Mandatory   IDENT_NUM  
+80.  Identity 
+Verification 
+status  Number  2 Mandatory  01- Yes 
+02- No 
+ IDVER_STATUS  
+Related Person Details <RELATED_PERSON_DETAILS>(corresponding to 40 type 
+record in download format , Multiple per KYC record)  
+
+===== PAGE 40 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 40 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+81.  Related 
+Person 
+sequence 
+number  Number  5 
+ Mandatory   SEQUENCE_NO  
+82.  Type of 
+Relationship  
+ Number  2 Mandatory  Refer to related 
+person type master 
+in the bulk file 
+format  REL_TYPE  
+83.  Addition / 
+Deletion of 
+related 
+person  Number  2 Optional  01 - Addition of 
+Related Person  
+02- Deletion of 
+Related Person  
+ ADD_DEL_FLAG  
+84.  KYC Number 
+of Related 
+Person  Number  14 Mandatory/O
+ptional  Optional if ID 
+added  CKYC_NO  
+85.  Related 
+Person Name 
+Prefix  String  5 Mandatory   PREFIX  
+86.  Related 
+Person First 
+Name  String  50 Mandatory   FNAME  
+87.  Related 
+Person 
+Middle Name  String  50 Optional   MNAME  
+88.  Related 
+Person Last 
+Name  String  50 Optional   LNAME  
+89.  Related 
+Person 
+Maiden 
+Name Prefix  String  5 Mandatory   MAIDEN_PREFIX  
+ 
+90.  Related 
+Person 
+Maiden First 
+Name  String  50 Mandatory   MAIDEN_FNAME  
+ 
+
+===== PAGE 41 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 41 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+91.  Related 
+Person 
+Maiden 
+Middle Name  String  50 Optional   MAIDEN_MNAME  
+ 
+92.  Related 
+Person 
+Maiden Last 
+Name  String  50 Optional   MAIDEN_LNAME  
+ 
+93.  Related 
+person Flag 
+indicating 
+Father or 
+Spouse 
+Name  Number  
+ 2 Mandatory  ''01' - Father 
+Name  
+'02' - Spouse 
+Name  FATHERSPOUSE_FL
+AG 
+ 
+94.  Related 
+Person 
+Father/spous
+e Name 
+Prefix  String  5 Mandatory   FATHER_PREFIX  
+ 
+95.  Related 
+Person 
+Father/spous
+e First Name  String  50 Mandatory   FATHER_FNAME  
+ 
+96.  Related 
+Person 
+Father/spous
+e Middle 
+Name  String  50 Optional   FATHER_MNAME  
+ 
+97.  Related 
+Person 
+Father/spous
+e Last Name  String  50 Optional   FATHER_LNAME  
+ 
+98.  Related 
+Person 
+Mother Name 
+Prefix  String  5 Mandatory   MOTHER_PREFIX  
+ 
+
+===== PAGE 42 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 42 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+99.  Related 
+Person 
+Mother First 
+Name  String  50 Mandatory   MOTHER_FNAME  
+ 
+100.  Related 
+Person 
+Mother 
+Middle Name  String  50 Optional   MOTHER_MNAME  
+ 
+101.  Related 
+Person 
+Mother Last 
+Name  String  50 Optional   MOTHER_LNAME  
+ 
+102.  Related 
+person Date 
+of Birth  Date  10 Mandatory  'DD-MM-YYYY  DOB  
+103.  Related 
+person 
+Gender  String  1 Mandatory  ‘M’ – Male,  
+‘F’ – Female,  
+'T'- Transgender  GENDER  
+104.  Related 
+Person PAN 
+number  String  10 Either PAN or 
+Form 60 is 
+Mandatory   PAN  
+105.  Form 60  String  6 Either PAN or 
+Form 60 is 
+Mandatory   FORM_SIXTY  
+106.  Related 
+Person 
+Residential 
+Status  String  2 Mandatory  ‘01’ – Resident 
+Individual  RESI_STATUS  
+107.  Related 
+person 
+Permanent 
+Address Line 
+1 String  55 Mandatory   ADD_LINE1  
+ 
+
+===== PAGE 43 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 43 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+108.  Related 
+person 
+Permanent 
+Address Line 
+2 String  55 Optional   ADD_LINE2  
+ 
+109.  Related 
+person 
+Permanent 
+Address Line 
+3 String  55 Optional   ADD_LINE3  
+ 
+110.  Related 
+person 
+Permanent 
+Address City 
+/ Town / 
+Village  String  50 Mandatory   ADD_CITY  
+ 
+111.  Related 
+person 
+Permanent 
+Address 
+District  String  50 Mandatory   ADD_DIST  
+ 
+112.  Related 
+person 
+Permanent 
+Address 
+State/ U.T  String  2 Mandatory  Refer State 
+Master in Bulk file 
+formats  ADD_STATE  
+ 
+113.  Related 
+person 
+Permanent 
+Address - 
+Country  
+ String  2 Mandatory  Refer ISO 3166 
+country code in 
+Bulk file formats  ADD_COUNTRY  
+ 
+114.  Related 
+person 
+Permanent String  10 Mandatory/O
+ptional  Should be 6 digits 
+if Country 
+selected is 'India'  ADD_PIN  
+ 
+
+===== PAGE 44 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 44 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+Address - PIN 
+Code  Not mandatory if 
+country is not 
+India  
+115.  Proof of 
+Address 
+submitted for 
+Permanent 
+Address  String  3 Mandatory  Proof of Address 
+Master  PERM_POI_TYPE  
+ 
+116.  Flag 
+indicating if 
+Permanent 
+Address is 
+same as 
+corresponde
+nce Address  String  1 Mandatory  'Y' / 'N'  SAME_AS_PERM_FLAG  
+117.  Related 
+person 
+Corresponde
+nce Address 
+Line 1  String  55 Mandatory/O
+ptional  Mandatory if Flag 
+indicating Current 
+/ Permanent / 
+Overseas Address 
+is same as 
+correspondence/ 
+local Address is 
+'N' CORRES_ADD_LINE
+1 
+ 
+118.  Related 
+person 
+Corresponde
+nce Address 
+Line 2  String  55 Optional   CORRES_ADD_LINE
+2 
+ 
+119.  Related 
+person 
+Corresponde
+nce Address 
+Line 3  String  55 Optional   CORRES_ADD_LINE
+3 
+120.  Related 
+person 
+Corresponde
+nce Address - String  50 Mandatory / 
+Optional   CORRES_ADD_CITY  
+ 
+
+===== PAGE 45 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 45 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+City / Town / 
+Village  
+121.  Related 
+person 
+Corresponde
+nce Address 
+– District  String  50 Mandatory / 
+Optional   CORRES_ADD_DIST  
+ 
+122.  Related 
+person 
+Corresponde
+nce Address 
+– State  String  2 Mandatory / 
+Optional  Refer State 
+Master in Bulk file 
+formats  CORRES_ADD_STAT
+E 
+ 
+123.  Related 
+person 
+Corresponde
+nce Address 
+– Country  String  2 Mandatory / 
+Optional  Refer ISO 3166 
+country code in 
+Bulk file formats  CORRES_ADD_COU
+NTRY  
+ 
+124.  Related 
+person 
+Corresponde
+nce Address - 
+PIN Code  String  10 Mandatory/O
+ptional  Should be 6 digits 
+if Country 
+selected is 'India'  CORRES_ADD_PIN  
+ 
+125.  Related 
+person Proof 
+of Address 
+submitted for 
+corresponde
+nce Address  String  3 Mandatory / 
+Optional  Proof of Address 
+Master  CORRES_POI_TYPE  
+ 
+ 
+126.  Related 
+person 
+Residence 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   RESI_STD_CODE  
+127.  Related 
+person Number  
+ 10 Optional   RESI_TEL_NUM  
+
+===== PAGE 46 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 46 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+Residence 
+Telephone 
+No. 
+128.  Related 
+person Office 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   OFF_STD_CODE  
+129.  Related 
+person Office 
+Telephone 
+No. Number  
+ 10 Optional   OFF_TEL_NUM  
+130.  Related 
+person 
+Mobile No. 
+(ISD Code)  Number  
+ 3 Optional   MOB_CODE  
+131.  Related 
+person 
+Mobile No.  Number  
+ 20 Optional   MOB_NUM  
+132.  Related 
+person Email 
+ID String  100  Optional   EMAIL  
+133.  Related 
+person 
+Remarks if 
+any  String  300  Optional   REMARKS  
+134.  Related 
+person Photo 
+Type  String  2 Mandatory  Image Extension  PHOTO_TYPE  
+135.  Related 
+person Photo 
+Data  String   Mandatory  Image as Base64 
+encoded string  PHOTO_DATA  
+136.  Related 
+person 
+Permanent 
+POI Type  String  2 Mandatory  Image Extension   
+PERM_POI_IMAGE_T
+YPE  
+
+===== PAGE 47 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 47 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+137.  Related 
+person 
+Permanent 
+POI Data  String   Mandatory  Image as Base64 
+encoded string  PERM_POI_DATA  
+138.  Related 
+person 
+Corresponde
+nce POI Type  String  2 Mandatory/  
+Optional  Image Extension  CORRES_POI_IMAG
+E_TYPE  
+139.  Related 
+person 
+Corresponde
+nce POI Data  String   Mandatory/  
+Optional  Image as Base64 
+encoded string  CORRES_POI_DATA  
+140.  UID (Proof of 
+possession of 
+Aadhaar)  Number  12 Optional   PROOF_OF_POSSE
+SSION_OF_AADHAA
+R 
+141.  Voter ID Card  String  20 Optional   VOTERID  
+142.  NREGA Job 
+Card  String  40 Optional   NREGA  
+143.  Passport No  String  20 Optional   PASSPORT  
+144.  Foreign 
+National Id No  String  20 Optional   FOREIGN_NATIONAL_
+ID 
+145.  Driving 
+License, No   20 Optional   DRIVING_LICENCE  
+146.  Related 
+person 
+National 
+Population 
+register  String  20 Optional   NATIONAL_POPULA
+TION_REG_LETTER  
+ 
+147.  Related 
+person 
+Offline 
+verification of 
+Aadhaar  String  12 Optional   OFFLINE_VERIFICAT
+ION_AADHAAR  
+ 
+ 
+148.  Related 
+person EKYC String  12 Optional   E_KYC_AUTHENTIC
+ATION  
+ 
+
+===== PAGE 48 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 48 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+authenticatio
+n 
+149.  Date of 
+Declaration  Date  10 Mandatory  DD-MM-YYYY  DEC_DATE  
+150.  Place of 
+Declaration  String  50 Mandatory   DEC_PLACE  
+151.  KYC 
+Verification 
+Date  Date  10 Optional  'DD-MM-YYYY'  
+ KYC_DATE  
+152.  Type of 
+Document 
+Submitted  String  2 Optional  01- Certified 
+Copies  
+ DOC_SUB  
+153.  KYC 
+Verification 
+Name  String  150  Mandatory   KYC_NAME  
+154.  KYC 
+Verification 
+Designation  String  150  Mandatory   KYC_DESIGNATION  
+155.  KYC 
+Verification 
+Branch  String  150  Mandatory   KYC_BRANCH  
+156.  KYC 
+Verification 
+EMP code  String  50 Mandatory   KYC_EMPCODE  
+157.  Organization 
+Name  String  150  Mandatory   ORG_NAME  
+158.  Organization 
+Code  String  20 Mandatory   ORG_CODE  
+Image Details <IMAGE_DETAILS>(corresponding to 70 type record in bulk file 
+format ,Multiple per KYC record)  
+159.  Image 
+Sequence 
+Number  Number  2 Mandatory   SEQUENCE_NO  
+160.  Image 
+Extension  String  10 Mandatory   IMAGE_TYPE  
+
+===== PAGE 49 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 49 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / 
+Details  XML TAG  
+161.  Image Type  String  2 Mandatory  Refer Document 
+Master in Bulk file 
+format  IMAGE_CODE  
+162.  Flag for 
+Global or 
+Local Image  String  2 Optional  ‘01’ – Global  
+‘02’ – Local  
+ GLOBAL_FLAG  
+163.  Branch Code 
+to which 
+local address 
+is to be linked 
+with  String  15 Optional  Branch Code to 
+which local 
+address is to be 
+linked with  
+ BRANCH_CODE  
+164.  Image data  String   Mandatory  Image as Base64 
+encoded string  IMAGE_DATA  
+ 
+2.1.3: Response parameters for Legal Entity:  
+ 
+S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+Record Count  Details  <RECORD_COUNT_DETAILS>  
+1.  Count of 
+download of 
+record in the 
+last 5 years  Number  20 Mandatory  01-Individual  DOWNLOAD_COU
+NT 
+2.  Count of 
+update of 
+record in the 
+last 5 years  Number  20 Mandatory  01-Individual  UPDATE_COUNT  
+Personal Details< Personal DETAILS>(corresponding to 20 type record in bulk file 
+format, single per KYC record)  
+3.  Constitution 
+Type  String  2 Mandatory  Constitution Type  
+ CONSTI_TYPE  
+4.  CONSTI_TYPE
+_OTHERS  
+ String  20 Mandatory/O
+ptional   
+ CONSTI_TYPE_OTHE
+RS 
+ 
+
+===== PAGE 50 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 50 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+5.  CKYC No  Number  14 Mandatory   CKYC_NO  
+6.  CKYC 
+Reference ID  Alphanum
+eric  14 Mandatory   CKYC_REFERENC
+E_ID  
+7.  Name of the 
+Applicant/ 
+Entity  
+ String  250  Mandatory   FULLNAME  
+8.  Applicant 
+Maiden Full 
+Name  String  158  Optional   MAIDEN_FULLNA
+ME 
+9.  Date of Birth/ 
+Date of 
+Incorporation  Date  10 Mandatory  DD-MM-YYYY  
+ 
+ DOB  
+10.  Place of 
+Incorporation  
+ String  150  Mandatory  
+ Where Constitution 
+type is other than '01'  
+ PLACE_INC  
+ 
+11.  Date of 
+Commenceme
+nt of business  
+ Date  10 M/O  DD-MM-YYYY  
+Where Constitution 
+type is other than '01'  
+ DATE_COMM_BUS  
+ 
+12.  Country of 
+Incorporation  
+ 
+ String  2 M ISO 3166 country 
+code  
+ COUN_INC  
+ 
+13.  TIN/GST 
+Number  String  40 Optional   TIN_GST  
+14.  TIN or 
+equivalent 
+Issuing 
+Country  
+ String  2 M/O   TIN_COUN  
+ 
+15.  PAN  PAN 
+Number  10 PAN or Form 
+60 is 
+Mandatory   PAN  
+
+===== PAGE 51 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 51 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+16.  Form 60 
+Submitted  String   PAN or Form 
+60 is 
+Mandatory   FORM_SIXTY  
+17.  Current/ 
+Permanent/ 
+Overseas 
+Address Line 
+1 String  55 Mandatory   PERM_LINE1  
+18.  Current/ 
+Permanent/ 
+Overseas 
+Address Line  
+2 String  55 Optional   PERM_LINE2  
+19.  Current/ 
+Permanent/ 
+Overseas 
+Address Line 
+3 String  55 Optional   PERM_LINE3  
+20.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+City / Town / 
+Village  String  50 Mandatory   PERM_CITY  
+21.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+District  String  50 Mandatory   PERM_DIST  
+22.  Current/ 
+Permanent/ 
+Overseas 
+Address - 
+State/ U.T  String  2 Mandatory  Refer State Master 
+in Bulk file formats  PERM_STATE  
+23.  Current / 
+Permanent / 
+Overseas 
+Address - 
+Country  String  2 Mandatory  Refer ISO 3166 
+country code in 
+Bulk file formats  PERM_COUNTRY  
+
+===== PAGE 52 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 52 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+ 
+24.  Current / 
+Permanent / 
+Overseas 
+Address - PIN 
+Code  String  10 Mandatory/O
+ptional  Should be 6 digits if 
+Country selected is 
+'India'  
+Not mandatory if 
+country is not India  PERM_PIN  
+25.  Proof of 
+Address 
+submitted for 
+Current/ 
+Permanent/ 
+Overseas 
+Address  String  3 Mandatory  Proof of Address 
+Master  PERM_POA  
+26.  Proof of 
+Address 
+submitted for 
+Proof of 
+Identity and 
+Address 
+(Others)  
+ String  75 Mandatory if 
+Address 
+Proof is '99' 
+and 
+constitution 
+type is other 
+than '01'  
+  PERM_POAOTHERS  
+ 
+27.  Flag 
+indicating if 
+Current / 
+Permanent / 
+Overseas 
+Address is 
+same as 
+corresponde
+nce/ local 
+Address  String  1 Mandatory  'Y' / 'N'  PERM_CORRES_S
+AMEFLAG  
+28.  Corresponde
+nce/ Local 
+Address   Line 
+1 String  55 Mandatory/O
+ptional  Mandatory if Flag 
+indicating Current / 
+Permanent / 
+Overseas Address 
+is same as 
+correspondence/ 
+local Address is 'N'  CORRES_LINE1  
+
+===== PAGE 53 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 53 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+29.  Corresponde
+nce/ Local 
+Address Line 
+2 String  55 Optional   CORRES_LINE2  
+30.  Corresponde
+nce/ Local 
+Address Line 
+3 String  55 Optional   CORRES_LINE3  
+31.  Corresponde
+nce/ Local 
+Address - 
+City / Town / 
+Village  String  50 Mandatory/  
+Optional   CORRES_CITY  
+32.  Corresponde
+nce/ Local 
+Address - 
+District  String  50 Mandatory/  
+Optional   CORRES_DIST  
+33.  Corresponde
+nce/ Local 
+Address – 
+State  String  2 Mandatory/  
+Optional  Refer State Master 
+in Bulk file formats  CORRES_STATE  
+34.  Corresponde
+nce/ Local 
+Address – 
+Country  String  2 Mandatory/  
+Optional  Refer ISO 3166 
+country code in 
+Bulk file formats  CORRES_COUNTR
+Y 
+35.  Corresponde
+nce/ Local 
+Address - PIN 
+Code  String  10 Mandatory/O
+ptional  Should be 6 digits if 
+Country selected is 
+'India'  CORRES_PIN  
+36.  Proof of 
+Address 
+submitted for 
+Current 
+Address  Number  03 NA  CORRES_POA  
+37.  Residence 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   RESI_STD_CODE  
+
+===== PAGE 54 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 54 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+38.  PROOF_ADDR
+ESS  - - NA- Empty  PROOF_ADDRESS  
+39.  Residence 
+Telephone 
+No. Number  
+ 10 Optional   RESI_TEL_NUM  
+40.  Office 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   OFF_STD_CODE  
+41.  Office 
+Telephone 
+No. Number  
+ 10 Optional   OFF_TEL_NUM  
+42.  Mobile No. 
+(ISD Code)  Number  
+ 3 Optional   MOB_CODE  
+43.  Mobile No.  Number  
+ 20 Optional   MOB_NUM  
+44.  Fax No. (STD 
+Code)  
+ Number  4 Mandatory/O
+ptional  If Fax No. (STD) 
+code is provided, 
+Fax number is 
+mandatory and 
+vice versa  
+ FAX_CODE  
+ 
+45.  Fax No.  
+ Number  10 Mandatory/O
+ptional  If Fax No. (STD) 
+code is provided, 
+Fax number is 
+mandatory and 
+vice versa  
+ FAX_NO  
+ 
+46.  Email ID  String  100  Optional   EMAIL  
+47.  Remarks, if 
+any  String  300  Optional   REMARKS  
+48.  Date of 
+Declaration  Date  10 Mandatory  DD-MM-YYYY  DEC_DATE  
+49.  Place of 
+Declaration  String  50 Mandatory   DEC_PLACE  
+
+===== PAGE 55 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 55 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+50.  KYC 
+Verification 
+Date  Date  10 Mandatory  DD-MM-YYYY  KYC_DATE  
+51.  Type of 
+Document 
+Submitted  String  2 Mandatory   
+Legal Entity  
+01- Certified 
+Copies  
+02 - Equivalent e -
+document  
+ DOC_SUB  
+52.  Identity 
+Verification 
+Done  String  2 Mandatory  Mandatory for Legal 
+Entity  IPV_FLAG  
+53.  KYC 
+Verification 
+Name  String  150  Mandatory   KYC_NAME  
+54.  KYC 
+Verification 
+Designation  String  50 Mandatory   KYC_DESIGNATIO
+N 
+55.  KYC 
+Verification 
+Branch  String  50 Mandatory   KYC_BRANCH  
+56.  KYC 
+Verification 
+EMP code  String  50 Mandatory   KYC_EMPCODE  
+57.  Organization 
+Name  String  150  Mandatory   ORG_NAME  
+58.  Organization 
+Code  String  20 Mandatory   ORG_CODE  
+59.  Number of 
+Identity 
+Details  Number  2  
+Mandatory  Number of 
+(identity) '30' type 
+records  NUM_IDENTITY  
+60.  Number of 
+related 
+persons  Number  2 Mandatory  Number of '40' type 
+records  NUM_RELATED  
+
+===== PAGE 56 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 56 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+61.  Number of 
+Images  Number  2 Mandatory  Number of '70' type 
+records  NUM_IMAGES  
+62.  Mobile No. 2 
+(ISD Code)  
+ Number  3 M/O  
+  MOB_CODE_2  
+ 
+63.  Mobile No. 2  
+ Number  20 M/O  
+  MOB_NUM_2  
+ 
+64.  Email ID 2  
+ String  100  M/O  
+  EMAIL_2  
+ 
+65.  
+66.  Identity 
+sequence 
+number  Number  2 Mandatory   SEQUENCE_NO  
+67.  Identification 
+type  
+ String  2 Mandatory  Refer identity code 
+master in bulk file 
+format  IDENT_TYPE  
+68.  Identity 
+Number  
+ Number  As 
+per 
+Ident
+ity 
+Cod
+e 
+mast
+er Mandatory   IDENT_NUM  
+69.  Identity 
+Verification 
+status  Number  2 Mandatory  01- Yes 
+02- No 
+ IDVER_STATUS  
+70.  
+71.  Related 
+Person 
+sequence 
+number  Number  5 
+ Mandatory   SEQUENCE_NO  
+72.  Type of 
+Relationship  
+ Number  2 Mandatory  Refer related 
+person type master 
+in bulk file format  REL_TYPE  
+
+===== PAGE 57 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 57 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+73.  Addition / 
+Deletion of 
+related 
+person  Number  2 Optional  01 - Addition of 
+Related Person  
+02- Deletion of 
+Related Person  ADD_DEL_FLAG  
+74.  KYC Number 
+of Related 
+Person  Number  14 Mandatory/O
+ptional  Optional if ID 
+added  CKYC_NO  
+75.  Related 
+Person Name 
+Prefix  String  5 Mandatory   PREFIX  
+76.  Related 
+Person First 
+Name  String  50 Mandatory   FNAME  
+77.  Related 
+Person 
+Middle Name  String  50 Optional   MNAME  
+78.  Related 
+Person Last 
+Name  String  50 Optional   LNAME  
+79.  Related 
+Person 
+Maiden 
+Name Prefix  String  5 Mandatory   MAIDEN_PREFIX  
+ 
+80.  Related 
+Person 
+Maiden First 
+Name  String  50 Mandatory   MAIDEN_FNAME  
+ 
+81.  Related 
+Person 
+Maiden 
+Middle Name  String  50 Optional   MAIDEN_MNAME  
+ 
+82.  Related 
+Person 
+Maiden Last 
+Name  String  50 Optional   MAIDEN_LNAME  
+ 
+
+===== PAGE 58 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 58 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+83.  Related 
+person Flag 
+indicating 
+Father or 
+Spouse 
+Name  Number  
+ 2 Mandatory  ''01' - Father Name  
+'02' - Spouse Name  FATHERSPOUSE_F
+LAG  
+ 
+84.  Related 
+Person 
+Father/spous
+e Name 
+Prefix  String  5 Mandatory   FATHER_PREFIX  
+ 
+85.  Related 
+Person 
+Father/spous
+e First Name  String  50 Mandatory   FATHER_FNAME  
+ 
+86.  Related 
+Person 
+Father/spous
+e Middle 
+Name  String  50 Optional   FATHER_MNAME  
+ 
+87.  Related 
+Person 
+Father/spous
+e Last Name  String  50 Optional   FATHER_LNAME  
+ 
+88.  Related 
+Person 
+Mother Name 
+Prefix  String  5 Mandatory   MOTHER_PREFIX  
+ 
+89.  Related 
+Person 
+Mother First 
+Name  String  50 Mandatory   MOTHER_FNAME  
+ 
+90.  Related 
+Person 
+Mother 
+Middle Name  String  50 Optional   MOTHER_MNAME  
+ 
+
+===== PAGE 59 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 59 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+91.  Related 
+Person 
+Mother Last 
+Name  String  50 Optional   MOTHER_LNAME  
+ 
+92.  Related 
+person Date 
+of Birth  Date  10 Mandatory  'DD-MM-YYYY  DOB  
+93.  Related 
+person 
+Gender  String  1 Mandatory  ‘M’ – Male,  
+‘F’ – Female,  
+'T'- Transgender  GENDER  
+94.  Nationality  String  2 Mandatory 
+for LE   NATIONALITY  
+95.  Related 
+Person PAN 
+number  String  10 Either PAN or 
+Form 60 is 
+Mandatory   PAN  
+96.  Form 60  String  6 Either PAN or 
+Form 60 is 
+Mandatory   FORM_SIXTY  
+97.  Related 
+Person 
+Residential 
+Status  String  2 Mandatory  ‘01’ – Resident 
+Individual  
+‘02’ – Non-Resident 
+Indian  
+‘03’ - Foreign 
+National  
+'04' - Person of Indian 
+Origin  
+ RESI_STATUS  
+98.  Related 
+person 
+Permanent 
+Address Line 
+1 String  55 Mandatory   ADD_LINE1  
+ 
+
+===== PAGE 60 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 60 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+99.  Related 
+person 
+Permanent 
+Address Line 
+2 String  55 Optional   ADD_LINE2  
+ 
+100.  Related 
+person 
+Permanent 
+Address Line 
+3 String  55 Optional   ADD_LINE3  
+ 
+101.  Related 
+person 
+Permanent 
+Address City 
+/ Town / 
+Village  String  50 Mandatory   ADD_CITY  
+ 
+102.  Related 
+person 
+Permanent 
+Address 
+District  String  50 Mandatory   ADD_DIST  
+ 
+103.  Related 
+person 
+Permanent 
+Address 
+State/ U.T  String  2 Mandatory  Refer State Master 
+in Bulk file formats  ADD_STATE  
+ 
+104.  Related 
+person 
+Permanent 
+Address - 
+Country  
+ String  2 Mandatory  Refer ISO 3166 
+country code in 
+Bulk file formats  ADD_COUNTRY  
+ 
+105.  Related 
+person 
+Permanent String  10 Mandatory  Should be 6 digits if 
+Country selected is 
+'India'  ADD_PIN  
+ 
+
+===== PAGE 61 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 61 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+Address - PIN 
+Code  Not mandatory if 
+country is not India  
+106.  Proof of 
+Address 
+submitted for 
+Permanent 
+Address  String  3 Mandatory  Proof of Address 
+Master  PERM_POI_TYPE  
+ 
+107.  Flag 
+indicating if 
+Permanent 
+Address is 
+same as 
+corresponde
+nce Address  String  1 Optional  'Y' / 'N'  SAME_AS_PERM_F
+LAG  
+108.  Related 
+person 
+Corresponde
+nce Address 
+Line 1  String  55 Mandatory/  
+Optional  Mandatory if Flag 
+indicating Current / 
+Permanent / 
+Overseas Address 
+is same as 
+correspondence/ 
+local Address is 'N'  CORRES_ADD_LIN
+E1 
+ 
+109.  Related 
+person 
+Corresponde
+nce Address 
+Line 2  String  55 Optional   CORRES_ADD_LIN
+E2 
+ 
+110.  Related 
+person 
+Corresponde
+nce Address 
+Line 3  String  55 Optional   CORRES_ADD_LIN
+E3 
+111.  Related 
+person 
+Corresponde
+nce Address - 
+City / Town / 
+Village  String  50 Mandatory/  
+Optional   CORRES_ADD_CIT
+Y 
+ 
+
+===== PAGE 62 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 62 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+112.  Related 
+person 
+Corresponde
+nce Address - 
+District  String  50 Mandatory/  
+Optional   CORRES_ADD_DIS
+T 
+ 
+113.  Related 
+person 
+Corresponde
+nce Address 
+– State  String  2 Mandatory/  
+Optional  Refer State Master 
+in Bulk file formats  CORRES_ADD_STA
+TE 
+ 
+114.  Related 
+person 
+Corresponde
+nce Address 
+– Country  String  2 Mandatory/  
+Optional  Refer ISO 3166 
+country code in 
+Bulk file formats  CORRES_ADD_CO
+UNTRY  
+ 
+115.  Related 
+person 
+Corresponde
+nce Address - 
+PIN Code  String  10 Mandatory/O
+ptional  Should be 6 digits if 
+Country selected is 
+'India'  CORRES_ADD_PIN  
+ 
+116.  Related 
+person Proof 
+of Address 
+submitted for 
+corresponde
+nce Address  String  3 Mandatory/  
+Optional  Proof of Address 
+Master  CORRES_POI_TYP
+E 
+ 
+ 
+117.  Related 
+person 
+Residence 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   RESI_STD_CODE  
+118.  Related 
+person 
+Residence Number  
+ 10 Optional   RESI_TEL_NUM  
+
+===== PAGE 63 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 63 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+Telephone 
+No. 
+119.  Related 
+person Office 
+Telephone 
+No. (STD 
+Code)  Number  
+ 4 Optional   OFF_STD_CODE  
+120.  Related 
+person Office 
+Telephone 
+No. Number  
+ 10 Optional   OFF_TEL_NUM  
+121.  Related 
+person 
+Mobile No. 
+(ISD Code)  Number  
+ 3 Optional   MOB_CODE  
+122.  Related 
+person 
+Mobile No.  Number  
+ 20 Optional   MOB_NUM  
+123.  Related 
+person Email 
+ID String  100  Optional   EMAIL  
+124.  Related 
+person 
+Remarks, if 
+any  String  300  Optional   REMARKS  
+125.  Related 
+person Photo 
+Type  String  2 Mandatory  Image Extension  PHOTO_TYPE  
+126.  Related 
+person Photo 
+Data  String   Mandatory  Image as Base64 
+encoded string  PHOTO_DATA  
+127.  Related 
+person 
+Permanent 
+POI Type  String  2 Mandatory  Image Extension  PERM_POI_IMAGE
+_TYPE  
+
+===== PAGE 64 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 64 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+128.  Related 
+person 
+Permanent 
+POI Data  String   Mandatory  Image as Base64 
+encoded string  PERM_POI_DATA  
+129.  Related 
+person 
+Corresponde
+nce POI Type  String  2 Mandatory/  
+Optional  Image Extension  CORRES_POI_IMA
+GE_TYPE  
+130.  Related 
+person 
+Corresponde
+nce POI Data  String   Mandatory/  
+Optional  Image as Base64 
+encoded string  CORRES_POI_DAT
+A 
+131.  UID (Proof of 
+possession of 
+Aadhaar)  Number  12 Optional   PROOF_OF_POSS
+ESSION_OF_AADH
+AAR  
+132.  Voter ID Card  String  20 Optional   VOTERID  
+133.  NREGA Job 
+Card  String  40 Optional   NREGA  
+134.  Passport No  String  20 Optional   PASSPORT  
+135.  Foreign 
+National Id No  String  20 Optional   FOREIGN_NATIONA
+L_ID  
+136.  Driving 
+License No   20 Optional   DRIVING_LICENC
+E 
+137.  Related 
+person 
+National 
+Population 
+register  String  20 Optional   NATIONAL_POPUL
+ATION_REG_LETTE
+R 
+ 
+138.  Related 
+person 
+Offline 
+verification of 
+Aadhaar  String  12 Optional   OFFLINE_VERIFIC
+ATION_AADHAAR  
+ 
+ 
+139.  Related 
+person EKYC String  12 Optional   E_KYC_AUTHENTI
+CATION  
+ 
+
+===== PAGE 65 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 65 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+authenticatio
+n 
+140.  Date of 
+Declaration  Date  10 Mandatory  DD-MM-YYYY  DEC_DATE  
+141.  Place of 
+Declaration  String  50 Mandatory   DEC_PLACE  
+142.  KYC 
+Verification 
+Date  Date  10 Optional  'DD-MM-YYYY'  
+ KYC_DATE  
+143.  Type of 
+Document 
+Submitted  String  2 Optional  01- Certified 
+Copies  
+ DOC_SUB  
+144.  KYC 
+Verification 
+Name  String  150  Mandatory   KYC_NAME  
+145.  KYC 
+Verification 
+Designation  String  150  Mandatory   KYC_DESIGNATIO
+N 
+146.  KYC 
+Verification 
+Branch  String  150  Mandatory   KYC_BRANCH  
+147.  KYC 
+Verification 
+EMP code  String  50 Mandatory   KYC_EMPCODE  
+148.  Organization 
+Name  String  150  Mandatory   ORG_NAME  
+149.  Organization 
+Code  String  20 Mandatory   ORG_CODE  
+150.  DIN Number  Number  8 Mandatory/O
+ptional  Mandatory if 
+related person type 
+is 'Director'  DIN  
+151.  Remarks, if 
+any  
+ String  300  Optional   
+ REMARKS  
+152.  Related 
+Person type String  150  Mandatory  If related person 
+type Is others then RE_TYPE_OTHERS
+_DESC  
+
+===== PAGE 66 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 66 | Secured Download  API v1.3  
+Non -Confidential  S.No  Field  Field Type  Field 
+Leng
+th Mandatory / 
+Optional  Remarks / Details  XML TAG  
+Others 
+Description  
+ description should 
+be provided  
+ 
+153.  
+154.  
+155.  Image 
+Sequence 
+Number  Number  2 Mandatory   SEQUENCE_NO  
+156.  Image 
+Extension  String  10 Mandatory   IMAGE_TYPE  
+157.  Image Type  String  2 Mandatory  Refer Document 
+Master in Bulk file 
+format  IMAGE_CODE  
+158.  Image data  String   Mandatory  Image as Base64 
+encoded string  IMAGE_DATA  
+ 
+2.1.3 Error Messages  
+ 
+The following table lists the error messages  
+ 
+Scenario  Error Message  
+Digital signature verification 
+failed  Digital signature cannot be verified. Please sign 
+document with proper key  
+Public Key not uploaded  Public key not available in the server. Please upload key  
+IP not registered  Please configure your IP address.  
+IP does not match with the reg-
+istered IP  The given IP does not match with the institution’s regis-
+tered IP.  
+ 
+Time difference between 
+request and response is more 
+than 5 minutes  Time difference should be less than 5 minutes  
+Invalid CKYC Number  Please enter valid CKYC Number  
+Invalid CKYC Reference ID  Please enter valid CKYC Reference ID  
+
+===== PAGE 67 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 67 | Secured Download  API v1.3  
+Non -Confidential  Scenario  Error Message  
+Invalid FI Code  Please enter valid FI Code  
+For Individual, Version provided 
+other than 1. 3 Please enter valid version number  
+Incorrect date of Incorporation  Date of birth does not match with the given CKYC Number  
+ 
+Incorrect date of Incorporation  Date of birth does not match with the given CKYC Refer-
+ence ID  
+Incorrect Date of Incorporation  
+format  
+ Please enter date in dd -MM-YYYY format  
+ 
+Incorrect Mobile number.  Authentication Failed: Mobile number entered does not 
+match with the CKYC Number <ckyc number>  
+Incorrect Mobile number.  Authentication Failed: Mobile number entered does not 
+match with the CKYC Reference ID <ckyc reference id>  
+Provided Mobile number which 
+does not exist in ckyc number  Authentication Failed: Mobile number entered does not 
+exist for CKYC Number <ckyc number>  
+Provided Mobile number which 
+does not exist in ckyc reference 
+ID Authentication Failed: Mobile number entered does not 
+exist for CKYC Reference ID <ckyc reference id>  
+If Authentication factor type not 
+provided  Please enter Authentication Factor Type  
+If Authentication factor not pro-
+vided  Please enter < Authentication Factor Type >.  
+Authentication factor -DOI 
+length is not proper  Please enter Date of Birth in DD -MM-YYYY format  
+Authentication factor - Mobile 
+number length is not proper  Mobile number should be of length 10  
+Authentication factor - Mobile 
+number is given as invalid.  Mobile number cannot contain other than numbers  
+
+===== PAGE 68 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 68 | Secured Download  API v1.3  
+Non -Confidential  Scenario  Error Message  
+Insufficient wallet balance  
+ 
+ Institution wallet does not have sufficient balance, please 
+top up the wallet  
+ 
+Request ID is not numeric  
+ Request ID should be numeric  
+ 
+Request ID size greater than 8  
+ Request ID should not exceed more than 8 digits  
+ 
+Request ID is not unique 
+throughout the day for an FI.  
+ Please enter unique Request ID for the day  
+Request time is future time  Time stamp in the request cannot be a future time  
+Request XML tags where not  
+proper  Request XML not in proper format  
+ 
+3.1 Sample Request  
+Sample request is given below for Individual record   
+ 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+ 
+</CKYC_DOWNLOAD_REQUEST>  
+<HEADER>  
+        <FI_CODE>IN 0106</FI_CODE>  
+        <REQUEST_ID>561</REQUEST_ID>  
+         <VERSION>1. 3</VERSION>  
+ 
+    </HEADER>  
+    <CKYC_INQ>  
+    
+<SESSION_KEY>hzQD+0I6nGR4muA3BPElIk7ZRITuw/pQNWeoBO/+MjhRvhlY/rft8oDUYxFFo
+NFGZweMoguowKcj3EAayvErEqFe/C/ERHlKo6ZnJ0o+Oz+zCUM6mr1rZ6LhUoc7BZrYsdoVrY
+UoimMf9ZruoL/ji5HFQT3B0XAOYOrlmmJfhrfVZfKinfxBBGiWp8TAqL0Umw5/OO79VETfD30Y
+6k71eybFCJeLITAsVNHA+CWSHJyiqbS 7MdJDkXy+b3if+wCqOkdsppT2rVTriDIek9ox/ORnPDn
+
+===== PAGE 69 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 69 | Secured Download  API v1.3  
+Non -Confidential  /bIe/+0t/ONf028YeMvA+M0ZXMa15HH5CSny7Nd+lB95BSypZT5OsnmEbTA==</SESSION_KE
+Y> 
+        
+<PID>n8LI70jncZIZMLRzvXZ9Gx7dsvL81vckH9R07eQNKPHJX1ZX5RnMxw6m2Ndk/+o/GNM
+s+Sdc8iDWh/TW3gsMO+AHyoDyo1juHdYiaoMyXH1DE/axTOiHsueloFdiOcDfDUiNP777xqA3
+bwmKVjNl6dNSmkenuHGfbg11lnArZcXOLls9Au7AYnyvsPzu4kkkwp4VELEOxha53/+5wpMjS
+W4Dspb10tvE0W2QCJdbvVFnr1np8eK Hsi0sX3CQPkJF</PID>  
+  </CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod 
+Algorithm="http://www.w3.org/TR/2001/REC -xml-c14n-20010315"/><SignatureMethod 
+Algorithm="  http://www.w3.org/2001/04/xmldsig -more#rsa -sha256"/><Reference 
+URI=""><Transforms><Transform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped -
+signature"/></Transforms><DigestMethod Algorithm="  
+http://www.w3.org/2001/04/xmlenc#sha256 "/><DigestValue>rIHq8IrhF4srtS4cCNlg7EFcgR
+U=</DigestValue></Reference></SignedInfo><SignatureV alue>JpFt6L3+TGD98tC4Zkq+5Yrw
+UL9vbP7Skcw8uTVTomeRPNMs0cbfM1TZgy98NNS5uz5iqYP7IYz5+6c1Af49WyBY3nKFPmP1
+UEpPQMScHUGJ+EeWffhua3qpRqJT7SGWnO2yxT67z93i3Ow6h58K1/2X1Gn+kh9EnAaK2Yu
+V5+zhiMUUE1X5qg/egZ8IDVlczMPZQm22OEptY3XZgEL7WRFHLf+e6GRlet+7EYefayGkccN8
+K2aGgEx4TIC Y6aUlDKivE7XNflzcmTtUrfIqEl3UigDB+DrVJcss8p08uc/q5cYVqT+BsvACULO9p
+F5lPQwpcgk9+ZcYHDZyMkzxYA==</SignatureValue></Signature>  
+</CKYC_DOWNLOAD_REQUEST>  
+ 
+PID_DATA in request  (CKYC NUMBER) : 
+ 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME>31 -10-2016 11:55:08</DATE_TIME>  
+<CKYC_NO>40006289530277</CKYC_NO>  
+<AUTH_FACTOR_TYPE>01</AUTH_FACTOR_TYPE>  
+<AUTH_FACTOR> 02-05-1988</AUTH_FACTOR>  
+</PID_DATA>  
+ 
+PID_DATA in request (CKYC REFERENCE ID):  
+ 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+
+===== PAGE 70 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 70 | Secured Download  API v1.3  
+Non -Confidential  <DATE_TIME>31 -10-2016 11:55:08</DATE_TIME>  
+<CKYC_NO> INUYIK89098765</CKYC_NO>  
+<AUTH_FACTOR_TYPE>01</AUTH_FACTOR_TYPE>  
+<AUTH_FACTOR> 02-05-1988</AUTH_FACTOR>  
+</PID_DATA>  
+ 
+3.2 Sample Response  
+ 
+Sample Response given below for Individual record  
+ 
+<?xml version="1.0" encoding="UTF -8"?><CKYC_DOWNLOAD_RESPONSE>  
+    <HEADER>  
+        <FI_CODE>IN 0106</FI_CODE>  
+        <REQUEST_ID>7647</REQUEST_ID>  
+        <REQ_DATE>31 -10-2016</REQ_DATE>  
+        <VERSION> 1. 3<VERSION/>  
+    </HEADER>  
+    <CKYC_INQ>  
+   
+<SESSION_KEY>BDu4Zi02ct0kxehSJyiblRF7FsjyJc6e6FTzeXPXwmF5nCMypIXMDfxL+zTcopy
+++6mZmXPCltIrJFM2f9GcP14aohnqDqIHyG7WJhGel6ipgwcKNEivrKbpBvzc5B3CCSDlh9WY
+UVj6V4/usq//Uxoc4vhcja6TI24RwyBBm71+CVsj9cm6kbKWQrXae/ddUVusuikKFoJfitCjr4+gX
+YdnyaImt/51Cn5TbD56gnON1gif 1ppUiPo/o0XxTFK26gz+bo+kFMJMJt3cdE9WmMX+g0O2Mtu
+8VXn+tt/plTWMeimwtH5CA+A5YRRWb3DvVXT7sfeLp8EV7ZvSnDP5+Q==</SESSION_KEY>  
+        <PID>  
+yb7UGWJs0oX8H7dL+/h+q+3g8YZvLmDw3mofM4cTbKjSCX7jhFvmc/XRHlKPKe6Z5cUksA1C
+eHRyNNTxnwhmrHW1T42Rxef+MnpKJOoTTYsYyTOzRj5YroARsdjBoH3V5Eys+0Xpg1CrZpv9U
+c04FlJ5+sctmi3PYo5gEa4uXnJ7aQysHyGVMuQuhGbkZob/WGmnd+7BEnYpCDBuy+ekoc9W
+Wa2KAtPZ+0kEgwdsNc2h6bEIs1NoZt3DJZdVzC4B C7E2mJklDsaOTpoV0vRpikvCTFu3ERa9Q
+SkYySl1CQhogS2NZahO4yqA1BIh+PMJqEL/N8emy2FV3FzEUBjftyPIVesS0Kau08DIOVv0Kd6
+xOgLUMUvbGotZGBuqkAWuPWjt0IuQfrLTebwQWULP1Kj8wqYj4w6pputTCS4HjenUzengUV9
+2OZcgQNDc5EMlTuiJXMu42ZUDK6YwdTO81IkkF9jeYRsqAVwoFc+9al7MB0/kLzSe+P0zJSQtL
+QSFyjHsCV1affiX+wVPBOsNkHUonp5Cetmdej5V8KFi3bw2Dp8gKSkucz5mbH8rNNdrAxIFFq
+IZeFBbua0rksi/rWKdorAKq+um8a6lqiSSbmWS/0Th38WicIMXhMQKRhILvRLr5GZ2JNy4skRs
+OP8L/jFdwoOgSuDVIuMd/VH+wI9WhG2K+JaYqIv4S45qVg+7IF5JZlbg302e0B/Abf2G6A/B6gg
+k1SUHejXTQDuGrvJBh7W6eomXAhSo8qKurN0A 17ont5DiKiY8AJa7EH42VN+vHiABWez5He
+
+===== PAGE 71 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 71 | Secured Download  API v1.3  
+Non -Confidential  OclGF/23jqdkYbzHuZXw1a3GmCVuBylRgwnhlqvNPv3ENNWgA+oZLKGJ3pGvxsbSgFOdSjAM
+MCFn0Ya2q/XLLVuSinvlrLEWD9yajBjYbQhGwHMxYSiCnmUg5YKzg2Ebe3MpLlhERBjsRM1+h
+eLObA6UCDj/D4flXaoW85v4o00/GrtugNsOiKBAbE88NKMX+YJzy9yZjDK2EnyKnmDOjn1F+D
+0VM8F0IbDSJsUnyfdech/cRcPdDgQByP7eoGn3 VOVPwVIEsdMpyBvEJvWKFb+/RuiZql2FFsW
+6UFnEkpCLKTZYoJHlJzPN2aqgMPee2KuaAX75+nGK6N/WxA0r2F3aJe8QYybpdZhQFqFUhR0
+6YmTj43S3d3U5LIpx7vlRBceM1+P9QWbttZZ3V0wv0CBnAXIpr2HvKdoycKvTdQtob3A/FhJpH
+pkihmJ/XGBBMqnI+tQQN0sYgvG+CO1Ve/UPmtBNhjFr8VgYe8cDPVFIE5s32+G2BcfmzuICpc
+GlGnHff/E0PSaflWx3K9XBpRpx33/xND0mn5VsdyvV/5zbhby  
+        </PID>  
+    </CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod 
+Algorithm="http://www.w3.org/TR/2001/REC -xml-c14n-20010315"/><SignatureMethod 
+Algorithm="http://www.w3.org/2000/09/xmldsig#rsa -sha1"/><Reference 
+URI=""><Transforms><T ransform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped -
+signature"/></Transforms><DigestMethod 
+Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>YOGf9OnnBxqRL/nh
+bBhEFJWMNkY=</DigestValue></Reference></SignedInfo><SignatureValue>EmX77 3ONbKJ
+VRKpwl1cQYXW1M57ivjAJNq2Y4MnGE/Oif13eb0GBK/ZFvDK5V1ucrkLfsLMXgbZX  
+DHba6mHQFDzaeTMmlu9fAqUqTrzG14ng4Vieme0GuOCZYiUY2CIk4OX7I7oQJDigLbl9QxwA
+cLql  
+73GkYMpt7bbTxBl2PEonVSxemA0d4rmIUqqROriUVe6R3A+FvSAJxPWrXUPfUWxS8sadL1Xj4
+R5s  
+3pxBMWX4wdhZp/FPubCprGRvM0inAxBbzXQQdcRJEBwPobhsTbYnVHa5RdTBx/349XpVKz4r
+Tbyl  
+S2S0nu2p+WroZ/MkeB7ev+2O0LF+URgSVC5eKw==</SignatureValue></Signature></CKYC_
+DOWNLOAD_RESPONSE>  
+ 
+ 
+PID_DATA in response:  
+ 
+<PID>  
+ <?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+ <PID_DATA>  
+<RECORD_COUNT_DETAILS>  
+                                                         <DOWNLOAD_COUNT>5</DOWNLOAD_COUNT>  
+                                                         <UPDATE_COUNT>2</UPDATE_COUNT>  
+
+===== PAGE 72 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 72 | Secured Download  API v1.3  
+Non -Confidential                                                 </RECORD_COUNT_DETAILS>  
+ 
+  <PERSONAL_DETAILS>  
+   <CONSTI_TYPE>01</CONSTI_TYPE>  
+   <ACC_TYPE>03</ACC_TYPE>  
+   <CKYC_NO>40006289530277</CKYC_NO>  
+                                       <CKYC_REFERENCE_ID>INUYIK89098765</CKYC_REFERENCE_ID>  
+   <PREFIX>Mrs</PREFIX>  
+   <FNAME>Ashwini</FNAME>  
+   <MNAME> </MNAME>  
+   <LNAME>Kumar</LNAME>  
+<FULLNAME>Mrs Ashwini Kumar</FULLNAME>  
+   <MAIDEN_PREFIX>Mr</MAIDEN_PREFIX>  
+   <MAIDEN_FNAME>Ashwini</MAIDEN_FNAME>  
+   <MAIDEN_MNAME>Vinoy</MAIDEN_MNAME>  
+   <MAIDEN_LNAME>Raja</MAIDEN_LNAME>  
+   <MAIDEN_FULLNAME>Mr Ashwini Vinoy Raja</MAIDEN_FULLNAME>  
+   <FATHERSPOUSE_FLAG>02</FATHERSPOUSE_FLAG>  
+   <FATHER_PREFIX>Mr</FATHER_PREFIX>  
+   <FATHER_FNAME>Vinoy </FATHER_FNAME>  
+   <FATHER_MNAME></FATHER_MNAME>  
+   <FATHER_LNAME>Raja </FATHER_LNAME>  
+   <FATHER_FULLNAME>Mr Vinoy Raja</FATHER_FULLNAME>  
+   <MOTHER_PREFIX>Mrs</MOTHER_PREFIX>  
+   <MOTHER_FNAME>Devi</MOTHER_FNAME>  
+   <MOTHER_MNAME>Shree</MOTHER_MNAME>  
+   <MOTHER_LNAME>Shiva</MOTHER_LNAME>  
+   <MOTHER_FULLNAME>Mrs Devi Shree Shiva</MOTHER_FULLNAME>  
+   <GENDER>F</GENDER>  
+
+===== PAGE 73 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 73 | Secured Download  API v1.3  
+Non -Confidential     <DOB>02 -05-1988</DOB>  
+   <PAN>  MGHPL6852D  </PAN>  
+   <FORM_SIXTY>FORM60/ FORM_SIXTY>  
+<RESI_STATUS>03</RESI_STATUS>  
+   <PERM_LINE1>36 , Star Apartments</PERM_LINE1>  
+   <PERM_LINE2>ABC Road </PERM_LINE2>  
+   <PERM_LINE3>Kaloor </PERM_LINE3>  
+   <PERM_CITY>Kochi</PERM_CITY>  
+   <PERM_DIST>Ernakulam</PERM_DIST>  
+   <PERM_STATE>KL</PERM_STATE>  
+   <PERM_COUNTRY>IN</PERM_COUNTRY>  
+                                          <PERM_PIN>682012</PERM_PIN>  
+   <PERM_POA>03</PERM_POA>  
+   <PERM_CORRES_SAMEFLAG>Y</PERM_CORRES_SAMEFLAG>  
+   <CORRES_LINE1>36 , Star Apatments </CORRES_LINE1>  
+   <CORRES_LINE2> ABC Road </CORRES_LINE2>  
+   <CORRES_LINE3> Kaloor </CORRES_LINE3>  
+   <CORRES_CITY> Kochi </CORRES_CITY>  
+   <CORRES_DIST>Ernakulam</CORRES_DIST>  
+   <CORRES_STATE>KL</CORRES_STATE>  
+   <CORRES_COUNTRY>IN</CORRES_COUNTRY>  
+   <CORRES_PIN>682012</CORRES_PIN>  
+   <CORRES_POA>02</CORRES_POA>  
+   <RESI_STD_CODE></RESI_STD_CODE>  
+   <RESI_TEL_NUM></RESI_TEL_NUM>  
+   <OFF_STD_CODE></OFF_STD_CODE>  
+   <OFF_TEL_NUM></OFF_TEL_NUM>  
+   <MOB_CODE></MOB_CODE>  
+   <MOB_NUM>9949444994</MOB_NUM>  
+
+===== PAGE 74 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 74 | Secured Download  API v1.3  
+Non -Confidential     <EMAIL>gsdgg@yahoo.com</EMAIL>  
+   <REMARKS></REMARKS>  
+   <DEC_DATE>19 -10-2016</DEC_DATE>  
+   <DEC_PLACE>Kochi</DEC_PLACE>  
+   <KYC_DATE>04 -10-2016</KYC_DATE>  
+   <DOC_SUB>01</DOC_SUB>  
+   <KYC_NAME>Ravi Kumar </KYC_NAME>  
+   <KYC_DESIGNATION>Manager </KYC_DESIGNATION>  
+   <KYC_BRANCH>North </KYC_BRANCH>  
+   <KYC_EMPCODE>4636464</KYC_EMPCODE>  
+   <NUM_IDENTITY>2</NUM_IDENTITY>  
+   <NUM_RELATED>1</NUM_RELATED>  
+   <NUM_IMAGES>3</NUM_IMAGES>     
+  </PERSONAL_DETAILS>  
+  <IDENTITY_DETAILS>  
+   <IDENTITY>  
+    <SEQUENCE_NO>1</SEQUENCE_NO>  
+    <IDENT_TYPE>D</IDENT_TYPE>  
+    <IDENT_NUM>TGTPY5454I</IDENT_NUM>  
+    <IDVER_STATUS>02</IDVER_STATUS>  
+   </IDENTITY>  
+   <IDENTITY>  
+    <SEQUENCE_NO>2</SEQUENCE_NO>  
+    <IDENT_TYPE>C</IDENT_TYPE>  
+    <IDENT_NUM>CYOPO2154k</IDENT_NUM>  
+    <IDVER_STATUS>02</IDVER_STATUS>  
+   </IDENTITY>  
+  </IDENTITY_DETAILS>  
+  <RELATED_PERSON_DETAILS>  
+
+===== PAGE 75 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 75 | Secured Download  API v1.3  
+Non -Confidential     <RELATED_PERSON>  
+    <SEQUENCE_NO>1</SEQUENCE_NO>  
+    <REL_TYPE>2</REL_TYPE>  
+    <CKYC_NO></CKYC_NO>  
+    <PREFIX>Mrs</PREFIX>  
+    <FNAME>Kirti</FNAME>  
+    <MNAME></MNAME>  
+    <LNAME>yk</LNAME>  
+    <MAIDEN_PREFIX>Ms</MAIDEN_PREFIX>  
+    <MAIDEN_FNAME>Sri</MAIDEN_FNAME>  
+    <MAIDEN_MNAME>Siva</MAIDEN_MNAME>  
+    <MAIDEN_LNAME>Gupta</MAIDEN_LNAME>  
+    <FATHERSPOUSE_FLAG>01</FATHERSPOUSE_FLAG>  
+    <FATHER_PREFIX>Mr</FATHER_PREFIX>  
+    <FATHER_FNAME>Sai</FATHER_FNAME>  
+    <FATHER_MNAME>Ram</FATHER_MNAME>  
+    <FATHER_LNAME>Kumar</FATHER_LNAME>  
+    <MOTHER_PREFIX>Mrs</MOTHER_PREFIX>  
+    <MOTHER_FNAME>Ranjani</MOTHER_FNAME>  
+    <MOTHER_MNAME>siva</MOTHER_MNAME>  
+    <MOTHER_LNAME>priya</MOTHER_LNAME>  
+    <DOB>27 -12-1985</DOB>  
+    <GENDER>F</GENDER>  
+    <ADD_LINE1>25, abc Apartments</ADD_LINE1>   
+    <ADD_LINE2>Madipakkam</ADD_LINE2>  
+    <ADD_LINE3>abc</ADD_LINE3>  
+    <ADD_CITY>Chennai</ADD_CITY>  
+    <ADD_DIST>kanchipuram</ADD_DIST>  
+    <ADD_STATE>TN</ADD_STATE>  
+
+===== PAGE 76 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 76 | Secured Download  API v1.3  
+Non -Confidential      <ADD_COUNTRY>IN</ADD_COUNTRY>  
+    <ADD_PIN>607401</ADD_PIN>      
+             
+    <PERM_POI_TYPE>02</PERM_POI_TYPE>  
+    <CORRES_ADD_LINE1>89, plot A siva 
+Road</CORRES_ADD_LINE1>  
+    <CORRES_ADD_LINE2>near Abc 
+School</CORRES_ADD_LINE2>  
+    <CORRES_ADD_LINE3>manali</CORRES_ADD_LINE3>  
+    <CORRES_ADD_CITY>Chennai</CORRES_ADD_CITY>  
+    <CORRES_ADD_DIST>Kanchipuram</CORRES_ADD_DIST>  
+             
+     <CORRES_ADD_STATE>TN</CORRES_ADD_STATE>  
+             
+      <CORRES_ADD_COUNTRY>IN    
+  </CORRES_ADD_COUNTRY>  
+    <CORRES_ADD_PIN>604447</CORRES_ADD_PIN>  
+    <CORRES_POI_TYPE>02</CORRES_POI_TYPE>  
+    <RESI_STD_CODE></RESI_STD_CODE>  
+    <RESI_TEL_NUM></RESI_TEL_NUM>  
+    <OFF_STD_CODE>044</OFF_STD_CODE>  
+    <OFF_TEL_NUM>62354444</OFF_TEL_NUM>  
+    <MOB_CODE>91</MOB_CODE>  
+    <MOB_NUM>6541245787</MOB_NUM>     
+    <EMAIL>xyz@gmail.com</EMAIL>  
+    <REMARKS></REMARKS>  
+    <PHOTO_TYPE>jpg</PHOTO_TYPE>  
+   
+ <PHOTO_DATA>/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSExMVFRUXF
+xgaFxUXGBcYFRcXFxcYFxgXFRcYHSggGBolGxcXITEhJSkrLi4uGh8zODMtNygtLysBCgoKDg0
+OGxAQGC0lICUtLS0tLS0tLy0tLS0rLS0tLS0tLi0tLS0tNS0tLS8tLS0vLS0tLS0vLS0tNS0tLS0tLf/
+AABEIAKgBLAMBIgACEQEDEQH/xAAcAAACAgMB AQAAAAAAAAAAAAAAAQIGAwQFBwj/xAB
+DEAACAQMCAwQIAwYEAwkAAAABAgMAERIEIQUTMQYiQVEHIzJhcYGh8EJSkRRigpKi4TNysc
+EkQ9EVRFODk6PC0vH/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAuEQACAgECBQ
+
+===== PAGE 77 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 77 | Secured Download  API v1.3  
+Non -Confidential  IFAwUAAAAAAAAAAQIRAyExBBJBUfBhcRMigZHBobHhBRQy0fH/2gAMAwEAAhEDEQA/ALlB1
+rPWumxFbNcC2Olmvq9ZHEpeR1RR1ZiFH6mq/qu3mgTYSlz+4rMP5rY/WtT0q6TmaFmtvHIj/X
+A/R68jj6VtiwqatszlNo9P1fpNjG0endve7Ko+mRrjav0katvYSKMe8M5/W4H0qmUWrpWCC6E
+c7O3qu12uk66hwPJcUH6qAfrXKn1Mj+27v/mZm/ 1NYqBVqMVshNtjAop0UxBTFApimAxUqQq
+VABWpKbvbyFbVamm3JPv/9k      
+<PERM_POI_IMAGE_TYPE>jpg</PERM_POI_IMAGE_TYPE>  
+     
+ <PERM_POI_DATA>/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSExMVFR
+UXFxgaFxUXGBcYFRcXFxcYFxgXFRcYHSggGBolGxcXITEhJSkrLi4uGh8zODMtNygtLysBCgoK
+Dg0OGxAQGC0lICUtLS0tLS0tLy0tLS0rLS0tLS0tLi0tLS0tNS0tLS8tLS0vLS0tLS0vLS0tNS0tLS
+0tLf/AABEIAKgBLAMBIgACEQEDEQH/xAAcAAAC AgMBAQAAAAAAAAAAAAAAAQIGAwQFBwj/
+xABDEAACAQMCAwQIAwYEAwkAAAABAgMAERIEIQUTMQYiQVEHIzJhcYGh8EJSkRRigpKi4T
+NyscEkQ9EVRFODk6PC0vH/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAuEQACAg
+ECBQIFAwUAAAAAAAAAAQIRAyExBBJBUfBhcRMigZHBobHhBRQy0fH/2gAMAwEAAhEDEQA/
+ALlB1rPWumx FbNcC2Olmvq9ZHEpeR1RR1ZiFH6mq/qu3mgTYSlz+4rMP5rY/WtT0q6TmaFmt
+vHIj/XA/R68jj6VtiwqatszlNo9P1fpNjG0endve7Ko+mRrjav0katvYSKMe8M5/W4H0qmUWrpW
+CC6Ec7O3qu12uk66hwPJcUH6qAfrXKn1Mj+27v/mZm/1NYqBVqMVshNtjAop0UxBTFApimAx
+UqQqVABWpKbvbyFbVamm3JPv/9k </PERM_POI_DATA>  
+ <CORRES_POI_IMAGE_TYPE>jpg</CORRES_POI_IMAGE_TYPE>   
+ <CORRES_POI_DATA>/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSExMV
+FRUXFxgaFxUXGBcYFRcXFxcYFxgXFRcYHSggGBolGxcXITEhJSkrLi4uGh8zODMtNygtLysBCg
+oKDg0OGxAQGC0lICUtLS0tLS0tLy0tLS0rLS0tLS0tLi0tLS0tNS0tLS8tLS0vLS0tLS0vLS0tNS0t
+LS0tLf/AABEIAKgBLAMBIgACEQEDEQH/xAAcAAA CAgMBAQAAAAAAAAAAAAAAAQIGAwQFB
+wj/xABDEAACAQMCAwQIAwYEAwkAAAABAgMAERIEIQUTMQYiQVEHIzJhcYGh8EJSkRRigpKi
+4TNyscEkQ9EVRFODk6PC0vH/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAuEQACA
+gECBQIFAwUAAAAAAAAAAQIRAyExBBJBUfBhcRMigZHBobHhBRQy0fH/2gAMAwEAAhEDEQ
+A/ALlB1rPWumxFbNc C2Olmvq9ZHEpeR1RR1ZiFH6mq/qu3mgTYSlz+4rMP5rY/WtT0q6TmaF
+mtvHIj/XA/R68jj6VtiwqatszlNo9P1fpNjG0endve7Ko+mRrjav0katvYSKMe8M5/W4H0qmUWrp
+WCC6Ec7O3qu12uk66hwPJcUH6qAfrXKn1Mj+27v/mZm/1NYqBVqMVshNtjAop0UxBTFApim
+AxUqQqVABWpKbvbyFbVamm3JPv/9k </CORRES_POI_DATA>  
+    <PAN>iiipi2154o</PAN>  
+    <FORM_SIXTY>Form60</FORM_SIXTY>  
+    <PROOF_OF_POSSESSION_OF_AADHAAR>XXXXXXXX1234</ 
+PROOF_OF_POSSESSION_OF_AADHAAR>  
+    <VOTERID>abc1234567</VOTERID>  
+    <NREGA>nregaid123</NREGA>  
+    <PASSPORT>a1234567</PASSPORT>  
+    <PASSPORT_EXP>29 -05-2025</PASSPORT_EXP>  
+
+===== PAGE 78 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 78 | Secured Download  API v1.3  
+Non -Confidential  <FOREIGN_NATIONAL_ID>xyz12345</ FOREIGN_NATIONAL_ID>  
+    <DRIVING_LICENCE>a12345</DRIVING_LICENCE>  
+<NATIONAL_POPULATION_REG_LETTER>125t0124545</NATIONAL_POPULATION_REG_LET
+TER>  
+<OFFLINE_VERIFICATION_AADHAAR>XXXXXXXX1234</OFFLINE_VERIFICATION_AADHAAR>  
+<E_KYC_AUTHENTICATION> XXXXXXXX1234</E_KYC_AUTHENTICATION>  
+    <DEC_DATE>02 -05-2016</DEC_DATE>  
+    <DEC_PLACE>chennai</DEC_PLACE>  
+    <DOC_SUB>01</DOC_SUB>  
+    <ORG_NAME>dotexi</ORG_NAME>  
+    <ORG_CODE>dotexcodei</ORG_CODE>  
+   </RELATED_PERSON>  
+  </RELATED_PERSON_DETAILS>  
+   
+  <IMAGE_DETAILS>  
+   <IMAGE>  
+    <SEQUENCE_NO>1</SEQUENCE_NO>  
+    <IMAGE_TYPE>jpg</IMAGE_TYPE>  
+    <IMAGE_CODE>02</IMAGE_CODE>  
+    <GLOBAL_FLAG>02</GLOBAL_FLAG>  
+    <BRANCH_CODE>137</BRANCH_CODE>  
+    <IMAGE_DATA>  
+    
+ /9j/4AAQSkZJRgABAQEAYABgAAD/4QA6RXhpZgAATU0AKgAAAAgAA1EQAAEAAAABA
+QAAAFERAAQAAAABAAAAAFESAAQAAAABAAAAAAAAAAD/2wBDAAIBAQIBAQICAgICAgICAw
+UDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDA
+z/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw MDAw
+MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCACnAPsDASIAAhEBAxEB/8QAHw
+AAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9A
+QIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcY  
+    </IMAGE_DATA>  
+   </IMAGE>  
+
+===== PAGE 79 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 79 | Secured Download  API v1.3  
+Non -Confidential     <IMAGE>  
+    <SEQUENCE_NO>2</SEQUENCE_NO>      
+    <IMAGE_TYPE>jpg</IMAGE_TYPE>  
+    <IMAGE_CODE>09</IMAGE_CODE>  
+    <GLOBAL_FLAG>02</GLOBAL_FLAG>  
+    <BRANCH_CODE>137</BRANCH_CODE>  
+    <IMAGE_DATA>  
+/9j/4AAQSkZJRgABAQEAYABgAAD/4QA6RXhpZgAATU0AKgAAAAgAA1EQAAEAAAABAQAAAFE
+RAAQAAAABAAAAAFESAAQAAAABAAAAAAAAAAD/2wBDAAIBAQIBAQICAgICFFABRRRQAUU
+UUAFfnn/AMFjf+De3wb/AMFc/ix4X8eX3xB8SeAfFXhnS10UT2VnHe29zarPLOgMbMjLIrzS4cPj
+DDK8ZoooA439lr/g0o/ZK+AN3DfeItK8WfFbUYX8w HxPqu20VsAYFvarCjJkE7ZfM5POcDH6K/
+CH4IeD/wBn/wAE2vhrwL4X8P8Ag/w/Zf6jTdGsIrG1j9SI41VcnucZPeiigDqaKKKACiiigAooooAK
+KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q==  
+    </IMAGE_DATA>  
+   </IMAGE>  
+   <IMAGE>  
+    <SEQUENCE_NO>3</SEQUENCE_NO>      
+    <IMAGE_TYPE>jpg</IMAGE_TYPE>  
+    <IMAGE_CODE>06</IMAGE_CODE>  
+    <GLOBAL_FLAG>01</GLOBAL_FLAG>  
+    <BRANCH_CODE>137</BRANCH_CODE>  
+    <IMAGE_DATA>  
+    
+ /9j/4AAQSkZJRgABAQEAYABgAAD/4QA6RXhpZgAATU0AKgAAAAgAA1EQAAEAAAABA
+QAAAFERAAQAAAABAKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQIB8SeAfFXhn
+S10UT2VnHe29zarPLOgMbMjLIrzS4cPjDDK8ZoooA439lr/g0o/ZK+AN3DfeItK8WfFbUYX8wHx
+Pqu20VsAYFvarCjJkE7ZfM5POcDH6K/CH4IeD/wBn/wAE2vhr wL4X8P8Ag/w/Zf6jTdGsIrG1j9SI
+41VcnucZPeiigDqaKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q
+== 
+    </IMAGE_DATA>  
+   </IMAGE>  
+    
+  </IMAGE_DETAILS>  
+
+===== PAGE 80 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 80 | Secured Download  API v1.3  
+Non -Confidential   </PID_DATA>  
+</PID>  
+</CKYC_INQ>  
+</CKYC_DOWNLOAD_RESPONSE>  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 81 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 81 | Secured Download  API v1.3  
+Non -Confidential  3.3 Upload Public Key Menu Configuration for API access  
+ 
+Institutions can directly manage the API access without any additional approval  from 
+CKYCRR. For enabling API access, institutions will have to login to the CKYC application 
+using the IA admin user ID and click on the User Management tab and select Upload Public 
+Key menu. Below screen will be displayed to the user for managing API access.  
+ 
+ 
+The IA admin user will have to confirm the undertaking every day they visit the “Upload Public 
+Key” page. An email of the confirmation will be sent to all the institutional admins and nodal 
+officer.  
+To enable API access, the user must select “Enable”. Once this option is selected the option 
+to upload the public key and the register the IP addresses will be enabled.    
+• The public key must be uploaded as a .cer file. Click on “Upload” to upload the 
+selected file  
+• Public IP addresses of Indian origin from where the API requests will be sent to 
+CKYCRR must be registered. Up to 20 IP addresses can be registered.  Click on 
+‘Save’ to save the IP addresses input  
+• Click on “Submit” to complete the registration request from maker’s end.  
+
+
+===== PAGE 82 =====
+Central KYC Registry | Secured Download API Document | Version 1.3   
+ 82 | Secured Download  API v1.3  
+Non -Confidential   
+ 
+Post submission of changes to the Upload Public Key menu from maker IA admin user ID, 
+institution will have to ensure that the changes are also approved by the checker IA admin 
+user ID for successfully applying the changes. Post the approval from the checker IA admin 
+user ID, the changes will be come effective immediately and the institution can resume  using 
+the API services. This registration process must be carried out separately for both the test 
+and production environment.  
+ 
+  

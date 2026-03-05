@@ -1,39 +1,101 @@
-package com.example.ckyc.controller;
+package com.example.ckyc.serviceImpl;
 
+import com.example.ckyc.config.CkycProperties;
 import com.example.ckyc.constant.ApplicationConstant;
+import com.example.ckyc.dto.CkycDownloadRequest;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.dto.CkycUpdateResponseDto;
+import com.example.ckyc.dto.CkycUploadRequest;
+import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycEncryptionException;
+import com.example.ckyc.exception.CkycException;
 import com.example.ckyc.exception.CkycSignatureException;
 import com.example.ckyc.exception.CkycUpstreamException;
 import com.example.ckyc.exception.CkycValidationException;
+import com.example.ckyc.model.ApiResponse;
+import com.example.ckyc.service.CkycControllerService;
+import com.example.ckyc.service.DownloadService;
 import com.example.ckyc.service.UpdateService;
+import com.example.ckyc.service.UploadService;
 import com.example.ckyc.util.MaskingUtil;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/api/ckyc")
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Service
 @Slf4j
 @RequiredArgsConstructor
-public class UpdateController {
+public class CkycControllerServiceImpl implements CkycControllerService {
 
+    private static final Pattern REQUEST_ID_PATTERN = Pattern.compile("<REQUEST_ID>([^<]+)</REQUEST_ID>");
+
+    private final CkycService ckycService;
+    private final CkycResponseService responseService;
+    private final CkycApiClient ckycApiClient;
+    private final CkycProperties ckycProperties;
+    private final DownloadService downloadService;
+    private final UploadService uploadService;
     private final UpdateService updateService;
     private final MaskingUtil maskingUtil;
 
-    @PostMapping("/update")
-    public ResponseEntity<CkycUpdateResponseDto> update(
-            @Valid @RequestBody CkycUpdateRequestDto request,
-            BindingResult bindingResult
-    ) {
+    @Override
+    public Map<String, Object> search(String idType, String idNo) {
+        log.info("Received CKYC search request for idType={}", idType);
+        String xmlRequest = ckycService.prepareSearchRequest(idType, idNo);
+
+        String requestId = extractRequestId(xmlRequest);
+        String rawXmlResponse = ckycApiClient.postXml(ckycProperties.getUrl(), xmlRequest, requestId, "CKYC_SEARCH");
+        if (rawXmlResponse == null || rawXmlResponse.isBlank()) {
+            log.warn("CKYC upstream response body was empty");
+            throw new CkycException("Received empty response from CKYC");
+        }
+
+        Map<String, Object> processed = responseService.processResponse(rawXmlResponse, requestId, "CKYC_SEARCH");
+
+        Map<String, Object> apiResponse = new LinkedHashMap<>();
+        apiResponse.put("requestId", requestId);
+        apiResponse.put("requestXml", xmlRequest);
+        apiResponse.put("rawResponseXml", rawXmlResponse);
+        apiResponse.putAll(processed);
+        return apiResponse;
+    }
+
+    @Override
+    public ApiResponse<Map<String, Object>> download(CkycDownloadRequest request) {
+        log.info(
+                "Received CKYC download request ckycNo={} authFactorType={}",
+                maskingUtil.maskSensitive(request.getCkycNo()),
+                request.getAuthFactorType()
+        );
+        return downloadService.download(request);
+    }
+
+    @Override
+    public ApiResponse<Map<String, Object>> validateOtp(CkycValidateOtpRequest request) {
+        log.info("Received CKYC validate-otp request ckycNo={}", maskingUtil.maskSensitive(request.getCkycNo()));
+        return downloadService.validateOtp(request);
+    }
+
+    @Override
+    public ApiResponse<Map<String, Object>> upload(CkycUploadRequest request) {
+        int imageCount = request.getImageDetails() == null ? 0 : request.getImageDetails().size();
+        log.info("Received CKYC upload request identityCount={} addressCount={} imageCount={}",
+                request.getIdentityDetails() == null ? 0 : request.getIdentityDetails().size(),
+                request.getAddressDetails() == null ? 0 : request.getAddressDetails().size(),
+                imageCount);
+        return uploadService.upload(request);
+    }
+
+    @Override
+    public ResponseEntity<CkycUpdateResponseDto> update(CkycUpdateRequestDto request, BindingResult bindingResult) {
         log.info(
                 "Received CKYC update request ckycNo={} updateType={}",
                 maskingUtil.maskSensitive(request.getCkycNo()),
@@ -110,5 +172,10 @@ public class UpdateController {
                 .updateType(request == null ? null : request.getUpdateType())
                 .errorCode(errorCode)
                 .build();
+    }
+
+    private String extractRequestId(String xml) {
+        Matcher matcher = REQUEST_ID_PATTERN.matcher(xml);
+        return matcher.find() ? matcher.group(1) : "NA";
     }
 }

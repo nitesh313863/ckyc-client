@@ -25,7 +25,6 @@ import java.util.Map;
 public class DownloadServiceImpl implements DownloadService {
 
     private static final DateTimeFormatter REQUEST_TS_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-    private static final String ENVELOPE_OPERATION = "CKYC_INQ";
     private static final String OPERATION_DOWNLOAD = "CKYC_DOWNLOAD";
     private static final String OPERATION_VALIDATE_OTP = "CKYC_VALIDATE_OTP";
 
@@ -47,7 +46,7 @@ public class DownloadServiceImpl implements DownloadService {
         log.info("CKYC download started requestId={} ckycNo={}", requestId, maskingUtil.maskSensitive(request.getCkycNo()));
 
         String pidData = xmlBuilderService.buildDownloadPidData(request, LocalDateTime.now().format(REQUEST_TS_FORMAT));
-        String signedRequest = ckycEnvelopeService.encryptAndSign(ENVELOPE_OPERATION, requestId, pidData);
+        String signedRequest = ckycEnvelopeService.encryptAndSignDownloadInq(requestId, pidData);
         String rawResponse = ckycApiClient.postXml(ckycProperties.getDownloadUrl(), signedRequest, requestId, OPERATION_DOWNLOAD);
 
         Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_DOWNLOAD);
@@ -95,11 +94,15 @@ public class DownloadServiceImpl implements DownloadService {
     @Override
     public ApiResponse<Map<String, Object>> validateOtp(CkycValidateOtpRequest request) {
         long startNanos = System.nanoTime();
-        String requestId = requestIdGenerator.nextRequestId();
+        fieldValidationUtil.validateValidateOtpRequest(request);
+        String requestId = normalize(request.getRequestId());
+        if (requestId == null || requestId.isBlank()) {
+            requestId = requestIdGenerator.nextRequestId();
+        }
         log.info("CKYC validate-otp started requestId={} ckycNo={}", requestId, maskingUtil.maskSensitive(request.getCkycNo()));
 
         String pidData = xmlBuilderService.buildValidateOtpPidData(request, LocalDateTime.now().format(REQUEST_TS_FORMAT));
-        String signedRequest = ckycEnvelopeService.encryptAndSign(ENVELOPE_OPERATION, requestId, pidData);
+        String signedRequest = ckycEnvelopeService.encryptAndSignDownloadInq(requestId, pidData);
         String rawResponse = ckycApiClient.postXml(
                 ckycProperties.getValidateOtpUrl(),
                 signedRequest,
@@ -109,6 +112,20 @@ public class DownloadServiceImpl implements DownloadService {
 
         Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_VALIDATE_OTP);
         String error = normalize((String) processed.get("error"));
+        if (isOtpResent(error + " " + rawResponse)) {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("requestXml", signedRequest);
+            data.put("rawResponseXml", rawResponse);
+            data.putAll(processed);
+            auditService.record(OPERATION_VALIDATE_OTP, requestId, "OTP_SENT", error);
+            log.info(
+                    "CKYC validate-otp resend-success requestId={} elapsedMs={} message={}",
+                    requestId,
+                    elapsedMs(startNanos),
+                    maskingUtil.maskSensitive(error)
+            );
+            return ApiResponse.of(requestId, "OTP_SENT", "OTP resent successfully", data);
+        }
         if (error != null && !error.isBlank()) {
             log.error(
                     "CKYC validate-otp failed requestId={} errorCode={} elapsedMs={} error={}",
@@ -147,6 +164,17 @@ public class DownloadServiceImpl implements DownloadService {
                 .filter(keyword -> keyword != null && !keyword.isBlank())
                 .map(keyword -> keyword.toUpperCase(Locale.ROOT))
                 .anyMatch(normalized::contains);
+    }
+
+    private boolean isOtpResent(String content) {
+        if (content == null || content.isBlank()) {
+            return false;
+        }
+        String normalized = content.toUpperCase(Locale.ROOT);
+        return normalized.contains("OTP RE-SENT")
+                || normalized.contains("OTP RESENT")
+                || normalized.contains("RETRIGGER OTP")
+                || normalized.contains("RE-SENT SUCCESSFULLY");
     }
 
     private String normalize(String value) {

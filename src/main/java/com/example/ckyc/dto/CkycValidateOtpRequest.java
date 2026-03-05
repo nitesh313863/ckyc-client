@@ -1,16 +1,18 @@
 package com.example.ckyc.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
 public class CkycValidateOtpRequest {
 
-    @NotBlank(message = "CKYC_NO is mandatory")
+    // Optional for audit; CKYC spec validate-otp PID_DATA does not require CKYC_NO
     private String ckycNo;
 
-    @NotBlank(message = "OTP is mandatory")
-    @Pattern(regexp = "^\\d{4,8}$", message = "OTP must be numeric and 4 to 8 digits")
+    @Pattern(regexp = "^\\d{6}$", message = "OTP must be numeric 6 digits when provided")
     private String otp;
+
+    private String validate;
+
+    private String requestId;
 }
