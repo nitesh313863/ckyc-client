@@ -1,0 +1,1064 @@
+ 
+ 
+ 
+Non -Confidential   
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Central KYC Registry  
+Secured Search  API Document  
+Version 1.3  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+2 | Secured Search API  v1.3  
+ 
+Non -Confidential   
+Table of Contents  
+1.2 Request  ................................ ................................ ................................ ................................ ...................  5 
+1.2.1 Client side: - ................................ ................................ ................................ ................................ ..... 5 
+1.2.2 Re quest format: - ................................ ................................ ................................ ............................  5 
+1.2.3 Sample Request  ................................ ................................ ................................ ...............................  6 
+1.2.3.1  ................................ ................................ ................................ ................................ ...................  6 
+Request -Individual V1.3:  ................................ ................................ ................................ ......................  6 
+1.2.3.2 PID_DATA in request – Individual:  ................................ ................................ ..........................  7 
+1.2.3.3 PID_DATA in request when ID Type is E (UID):  ................................ ................................ .......  7 
+1.2.3.4  ................................ ................................ ................................ ................................ ...................  8 
+Request -Legal V1.3:  ................................ ................................ ................................ ..............................  8 
+1.2.3.5 PID_DATA in request – Legal:  ................................ ................................ ................................ .. 9 
+1.2.3.6 PID_DATA in request when ID Type is Y (Alphanumeric Reference ID):  ................................  9 
+1.3. Response: - ................................ ................................ ................................ ................................ ...... 10 
+1.3.1 Client side: - ................................ ................................ ................................ ................................ ... 10 
+1.3.2 Response Format: - ................................ ................................ ................................ .......................  10 
+1.3.2.1 Response : - ................................ ................................ ................................ ................................ . 10 
+1.3.2.2 Response when ID type is C (PAN): - ................................ ................................ ...........................  11 
+1.3.3 Sample Response  ................................ ................................ ................................ ..........................  12 
+1.3.3.1 Response for Individual:  ................................ ................................ ................................ ........  12 
+1.3.3.2 PID_DATA in response – Individual when ID Type is Z (CKYC Number):  ..............................  13 
+1.3.3.3 PID_DATA in response when ID Type is C (PAN) other than Z:  ................................ ............  14 
+1.3.3.4 Response for Legal:  ................................ ................................ ................................ ................  15 
+1.3.3.5 PID_DATA in response – Legal when ID Type is Y (Alphanumeric Reference ID):  ...............  18 
+1.4 Web Services Details  ................................ ................................ ................................ ............................  19 
+1.4.1 Request Parameters for Individual and Legal  ................................ ................................ ..............  19 
+1.4.2 ID Type code  ................................ ................................ ................................ ................................ .. 20 
+1.4.3 Response Parameters for Individual  ................................ ................................ ............................  21 
+1.4.4 Response Parameters for Legal  ................................ ................................ ................................ .... 23 
+1.4.5 Error Messages  ................................ ................................ ................................ ..............................  25 
+1.5 Upload Public Key Menu Configuration for API access  ................................ ................................ .......  26 
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+3 | Secured Search API  v1.3  
+ 
+Non -Confidential  Document Update history  
+Date  Version  Remarks  
+- 1 Original Document  
+- 1.1 Original Document  
+- 1.2 Original Document  
+- 1.2 Document Update - Response parameters of Individual and Legal Entity  
+09-Mar-21 1.2 Sample for Individual and Legal  
+24-Mar-21 1.2 Document Update: Removal of <SearchResponsePID> tag in sample 
+provided in section 1.3.3.4 & 1.3.3.5  
+11-Jun-21 1.2 Document Update: Service URL (Live) rectified  
+05-Dec-23 1.2 Document Update: Placement of <SESSION_KEY/>  tag (1.2.2 , 1.3.2 .1 & 
+1.3.2.2 ) 
+24-Sep-24 1.2 Document Update: New tag <CKYC_REFERENCE_ID> introduced and 
+masked CKYC  
+03-April -25 1.3 CKYC Search API version updated  to v1.3 :  
+Introduced new version 1.3 for CKYC  Search  API with upgrading  of SHA 
+algorithm  from SHA1 to SHA256 . 
+15-July-25 1.3 Document Update – 
+Addition of  note to section 1.4.3  
+Addition of steps for Upload Public Key menu  
+ 
+ 
+ 
+ 
+ 
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+4 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.1 Introduction  
+This web service is used to search  different IDs for CKYC verification. This is applicable for 
+registered Financial Institutions. Both CERSAI and Financial Institution should share their public 
+key while registering for this service.  Financial Institution should co nfigure their IP address 
+through Upload Public Key interface in CKYC application that can be accessed by Institution 
+admins. The following table provides details on CKYC Verification -Interface Properties:  
+ 
+  Property  Value  
+Service URL (Test bed)  https://testbed.ckycindia.in/Search/ckycverificationservice/verify   
+Service URL (Live)  https://www.ckycindia.in/Search/ckycverificationservice/verify  
+Request type  Application/XML  
+Response type  Application/XML  
+Request Digitally signed  Yes 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+5 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.2 Request  
+Requests  should be digitally signed using FI’s Private Key and its public key should be shared with 
+CERSAI at the time of registering for this service. Personal Identity Data (PID) should be encrypted 
+using session key and Session key should be encrypted u sing public key provided by CERSAI so it 
+can be decrypted  only with CERSAI’s private key. The encrypted PID and session key should be 
+encoded to Base64 string. Users  can follow the below steps for encryption.  
+ 
+1.2.1 Client side: - 
+1) Generate a random 256-bit session key.  
+2) Encrypt PID and timestamp using this session key by AES algorithm.  
+3) Encode the encrypted PID to Base64 string  
+4) Encrypt the session key using public key provided by CERSAI using RSA algorithm.  
+5) Encode the en crypted session key to Base64 string  
+6) Add this encrypted and encoded session key in request  xml. 
+7) Sign entire request using FI's private key.  
+ 
+Please note that the ciphers for encryption have been upgraded.  
+ 
+For V1.3, requests should be encrypted with RSA/NONE/OAEPWithSHA256AndMGF1Padding 
+algorithm  and xml request should be signed with SHA256 algorithm.   
+ 
+ 
+1.2.2  Request format: - 
+Request format remains the same for Individual and Legal  
+<REQ_ROOT>  
+<HEADER>  
+<FI_CODE />  
+<REQUEST_ID />  
+<VERSION />  
+</HEADER>  
+<CKYC_INQ>  
+<PID>  
+<PID_DATA>  
+<DATE_TIME />  
+<ID_TYPE />  
+<ID_NO />  
+</PID_DATA>  
+</PID>  
+<SESSION_KEY/>  
+ 
+</CKYC_INQ>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+6 | Secured Search API  v1.3  
+ 
+Non -Confidential  </REQ_ROOT>  
+ 
+1.2.3 Sample Request  
+ 
+1.2.3.1 
+            Request -Individual V1.3:  
+<?xml version="1.0" encoding="UTF -8"?><REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN 0106</FI_CODE>  
+<REQUEST_ID>02</REQUEST_ID > 
+<VERSION>1.3</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+<PID>huoJx9wQ266EicUOdIinE+hJNxbyILKvTmfy8qTsQkcTXNrhLPJ5U67LmbJzPUEa71Et
+NGT57sqCvGFYSBeGv2pjXkTOoMvsZETwq +6rrB+LiYuy+X7nTuNqXdPxTRHCLHoJSaQrSR7
+gb3SlepkmfbscxMj9w8h3d/p+ig3F+C4duc+Aom20Bj8R5+4zVMkcB7gr5j5odVwzP5PTilt+
+bsrJwjRAXSp7VKohJ5+MTJ4=</PID>  
+<SESSION_KEY>ZlziyLF37bykRkzj4FyjIVx6EvMd/6u5wzPVSAkepdMG6odsN6Kix15fVAvItx
+uXz1x9EZzrfyD2moawxVvl2grX3yAO8HQe1Hx9aY61QTAAcq4ApthnObUmIcFIosS8QoD5
+gt0k1NdQ3qPRVcOukRDrgZgKQIQNgtDeSdrI9WtUWNCBveiREJoVqJsLjCOkSoyQOmVTw
+AWjayGdEyuyceorYeFZDhnDtRrI+lkyGIkDmIx3m5z em5vKrPro13P8RgVZ/Al8AzkgKUyInC
+5da7pQ/RkewFrbLAEuUkrFSF4MdKrBS+sMX07NxWk7mOtK6dafT2OJpL+yk2EfZtXemQ==
+</SESSION_KEY>  
+</CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod 
+Algorithm="http://www.w3.org/TR/2001/R EC-xml-c14n -
+20010315"/><SignatureMethod Algorithm="http://  www.w3.org/2001/04/xmldsig -
+more#rsa -sha256 "/><Reference URI=""><Transforms><Transform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped -
+signature"/></Transforms><DigestMethod 
+Algorithm=" http:/ /www.w3.org/2001/04/xmlenc#sha256 "/><DigestValue>m8ytZjJS6tFE
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+7 | Secured Search API  v1.3  
+ 
+Non -Confidential  LsYJvrSpvxS81Bc=</DigestValue></Reference></SignedInfo><SignatureValue>e55kdxd
+WuwghAvsT7UgIkIUXkBBA28EBuvwqcenBBt9PVV5qs/0WbwFJu7EGEbE3zpbP6sGSN761  
+SIAx13UGq504lES+PIeJudj8OWKmUZgQvSaB0DoYYCNpIqY Uzkn93ufnr5L6Wf+q9utua0A
+8FRoe  
+voy0DEBidROxzRVvZ84IyP74kZ2vFFCADqWOjHXUiczwsnGhvAtd6I80BU+2CJJXhDpM7w5
+NtzA7  
+R2nXNC2PvEswGA7lCW53tZ1WoY1p6ty30wl/f4SvP/kHkiSU7QRRFy+QTjO3S21bdWAybp
+u9dg1/  
+i5tMwtPlpNNNUsYAWHvPSV40bNJ5wBL/A7hTqg==</SignatureValue></Signature></R E
+Q_ROOT>  
+ 
+1.2.3 .2 PID_DATA in request  – Individual:  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME> 22-11-2016 10:09:22 </DATE_TIME>  
+<ID_TYPE>A</ID_TYPE>  
+<ID_NO>D4567890</ID_NO>  
+</PID_DATA>  
+ 
+1.2.3 .3 PID_DATA in request  when ID Type  is E (UID) : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME> 22-11-2016 10:09:22 </DATE_TIME>  
+<ID_TYPE>E</ID_TYPE>  
+<ID_NO> UID|ApplicantName|DOB|Gender </ID_NO>  
+</PID_DATA>  
+Note :  
+• UID : Please enter last 4 digits of UID Number   
+• "|" character should  be used as a separator.   
+• ApplicantName  : FirstName+Mid dleName+LastName  (Applicant Name should be 
+same as provided during KYC Upload /Update)  
+• DOB  Format : DD -MM -YYYY   
+• Gender : M/F/T (Size 1)   
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+8 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.2.3. 4 
+             
+            Request -Legal V1.3:  
+<?xml version="1.0" encoding="UTF -8"?><REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN 0106</FI_CODE>  
+<REQUEST_ID>02</REQUEST_ID>  
+<VERSION>1.3</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+ 
+<PID>ZlD8IUwYgoGGmhUeOoP2SDP6IaQez2MKi6IKozlWMRbxCKVuEROQLHfwLV2C6X7x
+BOfExHVkKwqSdE1wMe+NKi9Qy5nI6SUQe8z3SpWxZ5xWjyDphNZxZYXCuGqqMIsg5TFn
+6HBs1zx+nJDp2y5C7LQ41b9Ld1UaNVBJDOfuyYY8jncWzZrNxVXD3+UrCnZH79qdkjXmhe
+qBxBsNxfLdLz2x96/Qnf6X2Up1qIHrFUu9Ulj3LzRkkoAiB8z Brs/y</PID>  
+<SESSION_KEY>hNkloqvfwh1UYoRmiZdof1bnikbk8vq9CDktVjsBoHPy/9mpLSa6f6GwHl/z
+hruKpNDFOHCGdMoUP779TwH9Deieq6IM7YBv4wuYtudBa1eGG/lv2xptenlKsF/hrZhXQ
+Oh5byikGCMm0lFcZoaKW9lgfEKVQ3TXc1QLIVDEUxZQUa3daplxZNdQ97zhl8RFMz/IDqEq
+hCSaYGlAJl9RY60CT43gjefCxFFN7/U 5+hyi+dm2YMX1/6AmzFriAjmg4gKSPgxekA+QAfgHg
+QTIGSka3GZVDHeNo/W+3hK1ydDtai3skI4LPSabwTfoIPCdcCJFdXIV5q7zOYcLJg815Q==</
+SESSION_KEY>  
+</CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod 
+Algorithm="http://www.w3.o rg/TR/2001/REC -xml-c14n -
+20010315"/><SignatureMethod Algorithm="http://  www.w3.org/2001/04/xmldsig -
+more#rsa -sha256 "/><Reference URI=""><Transforms><Transform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped -
+signature"/></Transforms><DigestMethod 
+Algorithm=" http://www.w3.org/2001/04/xmlenc#sha256 "/><DigestValue>m8ytZjJS6tFE
+LsYJvrSpvxS81Bc=</DigestValue></Reference></SignedInfo><SignatureValue>e55kdxd
+WuwghA vsT7UgIkIUXkBBA28EBuvwqcenBBt9PVV5qs/0WbwFJu7EGEbE3zpbP6sGSN761  
+SIAx13UGq504lES+PIeJudj8OWKmUZgQvSaB0DoYYCNpIqYUzkn93ufnr5L6Wf+q9utua0A
+8FRoe  
+voy0DEBidROxzRVvZ84IyP74kZ2vFFCADqWOjHXUiczwsnGhvAtd6I80BU+2CJJXhDpM7w5
+NtzA7  
+R2nXNC2PvEswGA7lCW53tZ1WoY1p6ty30wl/f4 SvP/kHkiSU7QRRFy+QTjO3S21bdWAybp
+u9dg1/  
+i5tMwtPlpNNNUsYAWHvPSV40bNJ5wBL/A7hTqg==</SignatureValue></Signature>  
+</REQ_ROOT>  
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+9 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.2.3. 5 PID_DATA in request  – Legal:  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME> 22-11-2020 10:09:22 </DATE_TIME>  
+<ID_TYPE> C</ID_TYPE>  
+<ID_NO>D4567890</ID_NO>  
+</PID_DATA>  
+ 
+1.2.3. 6 PID_DATA in request  when ID Type is Y (Alphanumeric Reference ID):  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME> 22-11-2020 10:09:22 </DA TE_TIME>  
+<ID_TYPE> Y</ID_TYPE>  
+<ID_NO> INARAV17091999 </ID_NO>  
+</PID_DATA>  
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+10 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.3. Response : - 
+Response should be digitally signed using CERSAI’s Private Key and its public key will be available 
+to FIs. Personal Identity Data (PID) should be encrypted using session key and Session key should 
+be encrypted using public key provided by FI so it can be decrypted  only with FI’s private key. The 
+encrypted PID and session key should be encoded to Base64 string. Customer image will be sent  
+as a Base64 encrypted string. Users  can follow the below steps for encryption.  
+ 
+1.3.1 Client side: - 
+1) Verify signature using CERSAI’s public key.  
+2) Parse key parameter from request message.  
+3) Decode the session key from Base64 string.  
+4) Decrypt above key using FI’s private key with RSA algorithm so we will get session key.  
+5) Decode the PID from Base64 string.  
+6) Decrypt data using session key with AES algorithm.  
+7) Update of Cipher mode for decryption.  
+ 
+For V1.3, requests should be decrypted with RSA/NONE/OAEPWithSHA256AndMGF1Padding 
+algorithm . 
+ 
+ 
+1.3.2 Response Format: - 
+Response  format remains the same for Individual and Legal . 
+CKYC number will be masked in response  when  ID type is other  than Z (CKYC Number ) in 
+request.  
+1.3.2.1 Response : - 
+<REQ_ROOT>  
+<HEADER>  
+<FI_CODE />  
+< REQUEST_ID />  
+<REQ_DATE />  
+<VERSION />  
+</HEADER>  
+<CKYC_INQ>  
+<PID>  
+<PID_DATA>  
+<CKYC_NO />  
+<CKYC_REFERENCE_ID />  
+<NAME />  
+<FATHERS_NAME />  
+<AGE />  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+11 | Secured Search API  v1.3  
+ 
+Non -Confidential  <IMAGE_TYPE />  
+<PHOTO />  
+<KYC_DATE />  
+<UPDATED_DATE />  
+<ID-LIST>  
+<ID>  
+<TYPE/>  
+<STATUS/>  
+</ID>  
+</ID -LIST>  
+<REMARKS/>  
+</PID_DATA>  
+</PID>  
+<SESSION_KEY/>  
+ 
+<ERROR />  
+</CKYC_INQ>  
+</REQ_ROOT>  
+ 
+         1.3.2.2 Response when  ID type is C (PAN): - 
+<REQ_ROOT>  
+<HEADER>  
+<FI_CODE />  
+< REQUEST_ID />  
+<REQ_DATE />  
+<VERSION />  
+</HEADER>  
+<CKYC_INQ>  
+<PID>  
+<PID_DATA>  
+                  <SearchResponsePID>  
+<CKYC_NO />  
+<CKYC_REFERENCE_ID />  
+<NAME />  
+<FATHERS_NAME />  
+<AGE />  
+<IMAGE_TYPE />  
+<PHOTO />  
+<KYC_DATE />  
+<UPDATED_DATE />  
+<ID-LIST>  
+<ID>  
+<TYPE/>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+12 | Secured Search API  v1.3  
+ 
+Non -Confidential  <STATUS/>  
+</ID>  
+</ID -LIST>  
+<REMARKS/>  
+                </SearchResponsePID>  
+</PID_DATA>  
+</PID>  
+<SESSION_KEY/>  
+ 
+<ERROR />  
+</CKYC_INQ>  
+</REQ_ROOT>  
+ 
+1.3.3  Sample Response  
+1.3.3.1 Response  for Individual : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN 0106</FI_CODE>  
+<REQ_DATE>17 -10-2016</REQ_DATE>  
+< REQUEST_ID>02</ REQUEST_ID > 
+<VERSION>1. 3</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+ 
+<PID><?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<CKYC_NO> XXXXXXXXXX 4235</CKYC_NO>  
+<CKYC_ REFERENCE_ID >INISAI17091999 </CKYC_ REFERENCE_ID > 
+<NAME> Alex </NAME>  
+<FATHERS_NAME> Raj</FATHERS_NAME>  
+<AGE>27.0</AGE>  
+<IMAGE_TYPE>jpg</IMAGE_TYPE>  
+<PHOTO>/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsL
+DBkSEw8UHRofHh0aHBwgJC4nICIsIxwcWLMegVVBLHqcAHgE9Aa8+h/aA8 HzTxxSWmrwI
+7hWlkgjKoCfvHbITgdeAT6A0Aeu0Vh6B4h0rxHpY1HR75Lu03FNSexZ/m4OfougAook45Nb
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUA FFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQB//2Q==</PHOTO>  
+<KYC_DATE>06 -09-2016</KYC_DATE>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+13 | Secured Search API  v1.3  
+ 
+Non -Confidential  <UPDATED_DATE>15 -09-2016</UPDATED_DATE>  
+<ID_LIST>  
+<ID>  
+<TYPE>E </TYPE>  
+<STATUS>03</STATUS>  
+</ID>  
+<ID>  
+<TYPE>F </TYPE>  
+<STATUS>02 </STATUS>  
+</ID>  
+</ID_LIST>  
+<REMARKS>done </REMARKS>  
+</PID_DATA>  
+ 
+</PID>  
+<SESSION_KEY>Fs+Ergv4flMZ5hgb/U3DPVyj9FdEYIReZQcl2gqm3IrP7/EL/N8vrFj2MSJZiFL
+2ikOn4yYho4EEI76HDN7MKoRSEwOEH+smer8Ng/7ymiirB/L0AlLuyQv78H005ZbefdkWip
+0hQPglaocGQC1qy2T0kis9ugYEMjibgt1WUVSiLdOv2PHGqbrXbh+Airvih/Rk92ty MQHz1D
+kXlgsCu++dDkMShYYKfh30Ed8Xg7R/1NHJe3NJId97fcPWDykMEqKWvDVJsS6LlS3JF46hyV
+UsNOSY2hvugMGaHod6Er0TPwh2s8iH2KhVR3c9rCL+h5HP7pC8roo7U4vIuN/ysw==</SE
+SSION_KEY>  
+</CKYC_INQ>  
+</REQ_ROOT>  
+ 
+1.3.3 .2 PID_DATA in response  – Individual  when ID Type is Z  (CKYC Number) : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<CKYC_NO> 3678786790 4235</CKYC_NO>  
+<CKYC_ REFERENCE_ID >INISAI17091999 </CKYC_ REFERENCE_ID > 
+             <NAME> Alex</NAME>  
+<FATHERS_NAME> Raj</FATHERS_NAME>  
+<AGE>27.0</AGE>  
+<IMAGE_TYPE>jpg</IMAGE_TYPE>  
+<PHOTO>/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsL
+DBkSEw8UHRofHh0aHBwgJC4nICIsIxwcWLMegVVBLHqcAHgE9Aa8+h/aA8HzTxxSWmrwI
+7hWlkgjKoCfvHbITgdeAT6A0Aeu0Vh6B4h0rxHpY1HR75Lu03FNSexZ/m4OfougAook45Nb
+FFAB RRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQB//2Q==</PHOTO>  
+<KYC_DATE>06 -09-2016</KYC_DA TE> 
+<UPDATED_DATE>15 -09-2016</UPDATED_DATE>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+14 | Secured Search API  v1.3  
+ 
+Non -Confidential  <ID_LIST>  
+<ID>  
+<TYPE>E </TYPE>  
+<STATUS>03</STATUS>  
+</ID>  
+<ID>  
+<TYPE>F </TYPE>  
+<STATUS>02 </STATUS>  
+</ID>  
+</ID_LIST>  
+<REMARKS>done </REMARKS>  
+</PID_DATA>  
+ 
+1.3.3.3 PID_DATA in response when ID Type is C (PAN)  other than Z : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<SearchResponsePID>  
+<CKYC_NO> XXXXXXXXXX 4235</CKYC_NO>  
+<CKYC_ REFERENCE_ID >INISAI17091999 </CKYC_ REFERENCE_ID > 
+<NAME>uigiguig uigiuguigui</NAME>  
+<FATHERS_NAME>vuiviviviug</FATHERS_NAME>  
+<AGE>27.0</AGE>  
+<IMAGE_TYPE>jpg</IMAGE_TYPE>  
+<PHOTO>/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsL
+DBkSEw8UHRofHh0aHBwgJC4nICIsIxwcWLMegVVBLHqcAHgE9Aa8+h/aA8HzTxxSWmrwI
+7hWlkgjKoCfvHbI TgdeAT6A0Aeu0Vh6B4h0rxHpY1HR75Lu03FNSexZ/m4OfougAook45Nb
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFF
+FFABRRRQ AUUUUAFFFFABRRRQB//2Q==</PHOTO>  
+<KYC_DATE>06 -09-2016</KYC_DATE>  
+<UPDATED_DATE>15 -09-2016</UPDATED_DATE>  
+<ID_LIST>  
+<ID>  
+<TYPE>E</TYPE>  
+<STATUS>03</STATUS>  
+</ID>  
+<ID>  
+<TYPE>F</TYPE>  
+<STATUS>02</STATUS>  
+</ID>  
+</ID_LIST>  
+<REMARKS>done</REMARKS>  
+</SearchResponsePID>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+15 | Secured Search API  v1.3  
+ 
+Non -Confidential   
+<SearchResponsePID>  
+<CKYC_NO> XXXXXXXXXX 4980</CKYC_NO>  
+<CKYC_ REFERENCE_ID >LERTYP 17083899</CKYC_ REFERENCE_ID > 
+  <NAME>fdgdfgdfgdfgi </NAME>  
+ <FATHERS_NAME>mr Make  erw</FATHERS_NAME>  
+  <AGE>33</AGE>  
+ <IMAGE_TYPE>JPG</IMAGE_TYPE>  
+       
+<PHOTO>/9j/4AAQSkZJRgABAQEAyADIAAD/4QDCRXhpZgAASUkqAAgAAAANAP4ABAAB
+AAAAAAAAAAABAwABAAAAhQEAAAEBAwABAAAAjwAAAAIBAwABAAAAAQAAAAMBAw
+ABAAAABAAAAAYBAwABAAAAAADFThEBBAABAAAACAAAABUBAwABAAAAAQB/PxYBB
+AABAAAAjwAA ABcBBAABAAAA0AMAABoBBQABAAAAqgAAABsBBQABAAAAsgAAACgBA
+wtBUAfv9RRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUU
+UAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUU
+UAFFFFAH4A/8HR3/ACgo/bm/7tm/9bD/AGfaP+DXH/lBR+wz/wB3M/8ArYf7QVH/AAdHf
+8oKP25 v+7Zv/Ww/2faP+DXH/lBR+wz/AN3M/wDrYf7QVAH7/UUUUAf/2Q==</PHOTO>  
+             <KYC_DATE>03 -01-2020</KYC_DATE>  
+             <UPDATED_DATE>02 -01-2020</UPDATED_DATE>  
+             <ID_LIST>  
+              <ID>  
+              <TYPE>A</TYPE>  
+              <STATUS>03< /STATUS>  
+               </ID>  
+               <ID>  
+  <TYPE>E</TYPE>  
+  <STATUS>03</STATUS>  
+   </ID>  
+   <ID>  
+   <TYPE>C</TYPE>  
+   <STATUS>03</STATUS>  
+    </ID>  
+    </ID_LIST>  
+               <REMARKS>done</REMARKS>  
+</SearchResponsePID>  
+</PID_DATA>  
+ 
+1.3.3. 4 Response  for Legal : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN 0106</FI_CODE>  
+<REQ_DATE>17 -10-2020</REQ_DATE>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+16 | Secured Search API  v1.3  
+ 
+Non -Confidential  < REQUEST_ID>02</ REQUEST_ID>  
+<VERSION>1. 3</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+<PID><?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+         <CKYC_NO> XXXXXXXXXX 9659</CKYC_NO>  
+              <CKYC_ REFERENCE_ID >LEARAV29072000 </CKYC_ REFERENCE_ID > 
+        <NAME>ARP limited</NAME>  
+          <CONSTITUTION_TYPE>K -Artificial Liability  Partnership</CONSTITUTION_TYPE>  
+          <PLACE_OF_INCORPORATION>chennai</PLACE_OF_INCORPORATION>  
+              <AGE>0</AGE>  
+            <KYC_DATE>30 -07-2020</KYC_DATE>  
+            <UPDATED_DATE>30 -07-2020</UPDATED_DATE>  
+           <ID_LIST>  
+             <ID>  
+                <TYPE>01</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+            <ID>  
+                <TYPE>04</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+             <ID>  
+                <TYPE>05</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>06</TYPE>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+17 | Secured Search API  v1.3  
+ 
+Non -Confidential                  <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>07</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>08</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>03</TYPE>  
+                <STATU S></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>02</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+         </ID_LIST>  
+         <REMARKS></REMARKS>  
+  </PID_DATA>  
+</PID>  
+<SESSION_KEY>Fs+Ergv4flMZ5hgb/U3DPVyj9FdEYIReZQcl2gqm3 IrP7/EL/N8vrFj2MSJZiFL
+2ikOn4yYho4EEI76HDN7MKoRSEwOEH+smer8Ng/7ymiirB/L0AlLuyQv78H005ZbefdkWip
+0hQPglaocGQC1qy2T0kis9ugYEMjibgt1WUVSiLdOv2PHGqbrXbh+Airvih/Rk92tyMQHz1D
+kXlgsCu++dDkMShYYKfh30Ed8Xg7R/1NHJe3NJId97fcPWDykMEqKWvDVJsS6LlS3JF46hyV
+UsNOSY2hvugMGaHod6E r0TPwh2s8iH2KhVR3c9rCL+h5HP7pC8roo7U4vIuN/ysw==</SE
+SSION_KEY>  
+</CKYC_INQ>  
+</REQ_ROOT>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+18 | Secured Search API  v1.3  
+ 
+Non -Confidential  1.3.3. 5 PID_DATA in response  – Legal  when ID Type is Y (Alphanumeric Reference ID) : 
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<CKYC_NO> XXXXXXXXXX 9659</CKYC_NO>  
+<CKYC_ REFERENCE_ID >LEARAV29072000 </CKYC_ REFERENCE_ID > 
+ <NAME> ARP limited</NAME>  
+         <CONSTITUTION_TYPE>K -Artificial Liability Partnership</CONSTITUTION_TYPE>  
+         <PLACE_OF_INCORPORATION>chennai</PLACE_OF_INCORPORATION>  
+              <AGE>0</AGE>  
+         <KYC_DATE>30 -07-2020</KYC_DATE>  
+         <UPDATED_DATE>30 -07-2020</UPDATED_DATE>  
+          <ID_LIST>  
+             <ID>  
+                <TYPE>01</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+             <ID>  
+                <TYPE>04</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+             <ID>  
+                <TYPE>05</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+             <ID>  
+                <TYPE>06</TYPE>  
+                <STATUS></STATUS>  
+             </ID>  
+             <ID>  
+                <TYPE>07</TYPE>  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+19 | Secured Search API  v1.3  
+ 
+Non -Confidential                  <STATUS></STATUS>  
+             </ID>  
+             <ID>  
+                <TYPE>08</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>03</TYPE>  
+                <STATUS></STATUS>  
+            </ID>  
+            <ID>  
+                <TYPE>02</TYPE>  
+                <STATU S></STATUS>  
+            </ID>  
+        </ID_LIST>  
+        <REMARKS></REMARKS>  
+   </PID_DATA>  
+ 
+1.4 Web Services Details  
+1.4.1 Request Parameters  for Individual and Legal  
+The following table provides details on CKYC Verification -Request Parameters  for 
+Individual/Legal : 
+ 
+CKYC Verification -Request 
+Parameters Field Name  Description  Mandatory  
+FI_CODE  FI code provided by CKYC  Yes 
+DATE  Current date (dd-MM -yyyyHH:mm:ss)  Yes 
+VERSION   1.3 Yes 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+20 | Secured Search API  v1.3  
+ 
+Non -Confidential  ID_TYPE  ID Type code  Yes 
+ID_NO  ID Number  Yes 
+REQUEST_ID  Should be unique throughout the day for an FI.  Yes 
+ 
+1.4.2 ID Type code  
+ 
+Code  Category  Character  Validation  Data 
+Type  Type of 
+Account  
+A Passport  Number  20 First digit alphabet then 
+seven -digit  number.  String  All 
+B Voter ID  20  
+String  All 
+C PAN  10 First three digits any 
+alphabets, 4th digit in 
+ABCFGHJLPT, 5th digit any 
+alphabet, 6th to 9th digit 
+any numbers and last digit 
+any alphabet  String  All 
+D Driving License  20  
+String  All 
+E Proof Of Possession of 
+Aadhaar  165 Maximum 165 characters  
+• Aadhaar  – Last 4 
+digits of Aadhaar  
+number   
+• Applicant Name – 
+(Maximum 150 
+characters  including 
+FirstName, 
+MiddleName and 
+LastName ) 
+• DOB Format should 
+be DD -MM -YYYY  (10 
+characters)  
+• Gender – M/F/T (1 
+Character)  String  All 
+F NREGA Job Card  40  Maximum 40 characters.  String  All 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+21 | Secured Search API  v1.3  
+ 
+Non -Confidential  G National Population 
+Register Letter  20    
+Z CKYC Identifier  14 14-digit  Number  String  All 
+02 Certificate of 
+Incorporation/Formation  60  Maximum 60 characters.  String  All 
+03 Registration Certificate  60  Maximum 60 characters.  String  All 
+Y CKYC Reference ID  14 14 digit Alphanumeric  ID String  All 
+ 
+1.4.3 Response Parameters  for Individual  
+The following table provides details on CKYC Verification -Response Parameters:  
+ 
+S.N
+o Field  Field Type  Field 
+Lengt
+h Mandator
+y / 
+Optional  Remarks / 
+Details  XML TAG  
+1 FI Code  String  6 Mandator
+y FI Code  FI_CODE  
+2 Date  DATE  10 Mandator
+y  
+REQ_DATE  
+3 CKYC 
+Identifier  14 digit 
+number , 
+Alphabet as 
+a prefix  14/15 Mandator
+y CKYC number 
+correspondin
+g to serial 
+number in 
+request file  CKYC_NO  
+4 CKYC 
+Reference 
+ID 14 digit 
+Alphanumeri
+c Reference 
+ID 14 Mandator
+y CKYC 
+Reference ID 
+correspondin
+g to serial 
+number in 
+request file  CKYC_REFERENCE_I
+D 
+5 Applicant 
+Full Name  String  150 Mandator
+y   NAME  
+6 Applicant'
+s Fathers 
+Full Name  String  150 Mandator
+y   FATHERS_NAME  
+7 Applicants 
+Age Number  2 Mandator
+y   AGE  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+22 | Secured Search API  v1.3  
+ 
+Non -Confidential  8 Applicant 
+Photo  String   
+Mandator
+y Photo as 
+Base64 
+encoded 
+string  PHOTO  
+9 KYC 
+Generatio
+n Date  DATE  10 Mandator
+y DD-MM -YYYY  KYC_DATE  
+10 Last 
+Updated 
+on DATE  10 Mandator
+y DD-MM -YYYY  UPDATED_DATE  
+11 Remark s String  200  
+Validation 
+failure or 
+Record 
+doesn't exist  REMARKS  
+12 Request Id  Number  8 Mandator
+y Should be 
+unique 
+throughout 
+the day for 
+an FI.  REQ UEST_ID  
+13 Image 
+Type  String  5 Mandator
+y Extension of 
+Photo  IMAGE_TYPE  
+Identity Details  
+14 ID Type  String  2 Mandator
+y Proof of 
+Identity 
+Submitted  TYPE  
+15 ID Status  String  2 Optional  Proof of 
+Identity 
+Status  STATUS  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+23 | Secured Search API  v1.3  
+ 
+Non -Confidential  Note:  
+The prefix must not be included when provided the CKYC number/ CKYC reference ID in the 
+“CKYC_NO” tag. In the download request only the 14 -digit CKYC number or CKYC reference ID 
+must be provided.  
+i. Format of CKYC Number/Identifier - (prefix)NNNNNNNNNNNNNN  
+• where N is a numeric value  
+• where the first digit between 1 to 6 denotes the KYC customer type is “Individual”  
+• where the first digit between 7 to 9 denotes the KYC customer type is “Legal entity”  
+ 
+ii. Format of CKYC Reference ID - (prefix)INAAAANNNNNNNN  
+• where A is an alphabet and N is a numeric value  
+ 
+iii. Prefix values indicate the account type of the KYC record. The values provided will be as follows:  
+Prefix  Account type  
+S Small Account  
+L Simplified Account  
+O OTP based eKYC Accounts  
+M Minor Accounts  
+ 
+1.4.4 Response Parameters  for Legal  
+The following table provides details on CKYC Verification -Response Parameters:  
+S.N
+o Field  Field Type  Field 
+Lengt
+h Mandato
+ry / 
+Optional  Remarks / 
+Details  XML TAG  
+1 FI Code  String  6 Mandator
+y FI Code  FI_CODE  
+2 Date  DATE  10 Mandator
+y  
+REQ_DATE  
+3 CKYC 
+Identifier  Number  14 Mandator
+y CKYC 
+number 
+correspondi
+ng to serial 
+number in 
+request file  CKYC_NO  
+
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+24 | Secured Search API  v1.3  
+ 
+Non -Confidential  4 CKYC 
+Reference 
+ID 14 digit 
+Alphanume
+ric 
+Reference 
+ID 14 Mandator
+y CKYC 
+Reference 
+ID 
+correspondi
+ng to serial 
+number in 
+request file  CKYC_REFERENCE_ID  
+5 Applicant 
+Full Name  String  150 Mandator
+y   NAME  
+6 Constitutio
+n Type  String  2 Mandator
+y  Constitutio
+n Type  CONSTITUTION_TYPE  
+7 Applicants 
+Age Number  2 Mandator
+y   AGE  
+8 Place of 
+Incorporati
+on String  150 Mandator
+y Where 
+Constitution 
+type is other 
+than '01'  
+  PLACE_OF_INCORPORAT
+ION 
+9 KYC 
+Generation 
+Date  DATE  10 Mandator
+y DD-MM -
+YYYY  KYC_DATE  
+10 Last 
+Updated on  DATE  10 Mandator
+y DD-MM -
+YYYY  UPDATED_DATE  
+11 Remark  String  200  
+Validation 
+failure or 
+Record 
+doesn't exist  REMARKS  
+12 Request Id  Number  8 Mandator
+y Should be 
+unique 
+throughout 
+the day for 
+an FI.  REQ UEST_ID  
+Identity Details  
+13 ID Type  String  2 Mandator
+y Proof of 
+Identity 
+Submitted  TYPE  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+25 | Secured Search API  v1.3  
+ 
+Non -Confidential  14 ID Status  String  2 Optional  Proof of 
+Identity 
+Status  STATUS  
+ 
+ 
+1.4.5 Error Messages  
+The following table lists the error messages  
+Scenario  Error Message  
+Digital signature verification 
+failed  Digital signature cannot be verified. The certificate is 
+expired.   
+Incorrect ID type or ID Number  Validation failure  
+Request Id  size greater than 8  Request Id  should not exceed more than 8 digits  
+Request Id  is not unique 
+throughout the day for an FI.  Request Id  is not unique  
+Incorrect FI Code  Institution does not exists  
+No records found  No records found  
+Time difference between 
+request and response is more 
+than 5 minute  Time difference should be less than 5 minutes  
+IP not registered  Please configure your IP address.  
+IP does not match with the 
+registered IP  The given IP does not match with the institution’s 
+registered IP.  
+IF proper encryption is not used 
+for appropriate version.  Session Key Decryption error.  Please encrypt with correct 
+public Key  
+If session key is not generated 
+properly  PID Data Decoding error  
+ 
+Invalid request date  Invalid Date -Time Stamp. The format is dd -MM -yyyy 
+hh:mm:ss  
+If version number is not entered  Please enter version number  
+ 
+If KYC no. size is not 14 digits  KYC Number should be of length 14 digits  
+ 
+If entered 14 digit no. does not 
+exist  KYC Number <<KYC_NO>> does not exists in system  
+If CKYC Reference ID size is not 
+14 digits  CKYC Reference ID should be of length 14 digits  
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+26 | Secured Search API  v1.3  
+ 
+Non -Confidential  If entered 14 digit  CKYC 
+Reference ID is not in the correct 
+format  Please enter valid CKYC Reference ID  
+If version no given is 1.0 and 
+invalid KYC no given  Please enter individual KYC number  
+ 
+1.5 Upload Public Key Menu Configuration for API access  
+ 
+Institutions can directly manage the API access without any additional approval from CKYCRR. 
+For enabling API access, institutions will have to login to the CKYC application using the IA 
+admin user ID an d click on the User Management tab and select Upload Public Key menu. 
+Below screen will be displayed to the user for managing API access.  
+ 
+ 
+The IA admin user will have to confirm the undertaking every day they visit the “Upload Public 
+Key” page. An email of the confirmation will be sent to all the institutional admins and nodal 
+officer.  
+To enable API access, the user must select “Enable”. Once this option is selected the option to 
+upload the public key and the register the IP addresses will be enabled.    
+• The public key must be uploaded as a .cer file. Click on “Upload” to upload the 
+selected file  
+• Public IP addresses of Indian origin from where the API requests will be sent to 
+CKYCRR must be registered. Up to 20 IP addresses can be registered. Click on ‘Sav e’ 
+
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+27 | Secured Search API  v1.3  
+ 
+Non -Confidential  to save the IP addresses input  
+• Click on “Submit” to complete the registration request from maker’s end.  
+ 
+ 
+Post submission of changes to the Upload Public Key menu from maker IA admin user ID, 
+institution will have to ensure that the changes are also approved by the checker IA admin user 
+ID for successfully applying the changes. Post the approval from the checker IA admin User ID, 
+the changes will become effective immediately and the institution can resume using the API 
+services. This registration  process must be carried out separately for both the test and 
+production environment.  
+ 
+
+
+Central KYC Registry | Secured Search API Document | Version 1.3  
+28 | Secured Search API  v1.3  
+ 
+Non -Confidential    
+ 

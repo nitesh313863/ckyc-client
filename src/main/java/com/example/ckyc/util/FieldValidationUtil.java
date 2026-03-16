@@ -37,7 +37,8 @@ public class FieldValidationUtil {
             throw new CkycValidationException("Request body is mandatory");
         }
         validateDownloadIdentifier(request.getCkycNo(), "CKYC_NO");
-        validateAuthFactor(request.getAuthFactorType(), request.getAuthFactor());
+        RecordType recordType = detectRecordType(request.getCkycNo());
+        validateAuthFactor(request.getAuthFactorType(), request.getAuthFactor(), recordType);
     }
 
     public void validateValidateOtpRequest(CkycValidateOtpRequest request) {
@@ -111,7 +112,7 @@ public class FieldValidationUtil {
         }
     }
 
-    private void validateAuthFactor(AuthFactorType authFactorType, String authFactor) {
+    private void validateAuthFactor(AuthFactorType authFactorType, String authFactor, RecordType recordType) {
         if (authFactorType == null) {
             throw new CkycValidationException("AUTH_FACTOR_TYPE is mandatory");
         }
@@ -119,6 +120,10 @@ public class FieldValidationUtil {
             throw new CkycValidationException("AUTH_FACTOR is mandatory");
         }
         String value = authFactor.trim();
+
+        if (recordType == RecordType.INDIVIDUAL && authFactorType != AuthFactorType.MOBILE) {
+            throw new CkycValidationException("AUTH_FACTOR_TYPE must be 03 (MOBILE) for individual CKYC numbers");
+        }
 
         switch (authFactorType) {
             case DOI -> validateDob(value, "AUTH_FACTOR", true);
@@ -131,6 +136,30 @@ public class FieldValidationUtil {
             }
             default -> throw new CkycValidationException("Unsupported AUTH_FACTOR_TYPE: " + authFactorType.name());
         }
+    }
+
+    private RecordType detectRecordType(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return RecordType.UNKNOWN;
+        }
+        String normalized = identifier.trim();
+        if (!normalized.matches("^\\d{14}$")) {
+            return RecordType.UNKNOWN;
+        }
+        char first = normalized.charAt(0);
+        if (first >= '1' && first <= '6') {
+            return RecordType.INDIVIDUAL;
+        }
+        if (first >= '7' && first <= '9') {
+            return RecordType.LEGAL;
+        }
+        return RecordType.UNKNOWN;
+    }
+
+    private enum RecordType {
+        INDIVIDUAL,
+        LEGAL,
+        UNKNOWN
     }
 
     private void validateDob(String value, String fieldName, boolean mandatory) {

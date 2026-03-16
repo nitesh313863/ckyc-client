@@ -1,7 +1,9 @@
 package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.config.CkycProperties;
+import com.example.ckyc.dto.CkycApiResponsePayload;
 import com.example.ckyc.dto.CkycDownloadRequest;
+import com.example.ckyc.dto.CkycResponseDto;
 import com.example.ckyc.dto.CkycValidateOtpRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.model.ApiResponse;
@@ -15,9 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.Locale;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -39,7 +39,7 @@ public class DownloadServiceImpl implements DownloadService {
     private final MaskingUtil maskingUtil;
 
     @Override
-    public ApiResponse<Map<String, Object>> download(CkycDownloadRequest request) {
+    public ApiResponse<CkycApiResponsePayload> download(CkycDownloadRequest request) {
         long startNanos = System.nanoTime();
         fieldValidationUtil.validateDownloadRequest(request);
         String requestId = requestIdGenerator.nextRequestId();
@@ -49,14 +49,15 @@ public class DownloadServiceImpl implements DownloadService {
         String signedRequest = ckycEnvelopeService.encryptAndSignDownloadInq(requestId, pidData);
         String rawResponse = ckycApiClient.postXml(ckycProperties.getDownloadUrl(), signedRequest, requestId, OPERATION_DOWNLOAD);
 
-        Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_DOWNLOAD);
-        String error = normalize((String) processed.get("error"));
+        CkycResponseDto processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_DOWNLOAD);
+        String error = normalize(processed.getError());
         boolean otpTriggered = isOtpTriggered(error + " " + rawResponse);
 
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("requestXml", signedRequest);
-        data.put("rawResponseXml", rawResponse);
-        data.putAll(processed);
+        CkycApiResponsePayload data = CkycApiResponsePayload.builder()
+                .requestXml(signedRequest)
+                .rawResponseXml(rawResponse)
+                .response(processed)
+                .build();
 
         if (otpTriggered) {
             auditService.record(OPERATION_DOWNLOAD, requestId, "OTP_SENT", error);
@@ -72,7 +73,7 @@ public class DownloadServiceImpl implements DownloadService {
             log.error(
                     "CKYC download failed requestId={} errorCode={} elapsedMs={} error={}",
                     requestId,
-                    processed.get("errorCode"),
+                    processed.getErrorCode(),
                     elapsedMs(startNanos),
                     maskingUtil.maskSensitive(error)
             );
@@ -83,16 +84,16 @@ public class DownloadServiceImpl implements DownloadService {
         log.info(
                 "CKYC download completed requestId={} status={} ckycNo={} referenceId={} elapsedMs={}",
                 requestId,
-                processed.get("status"),
-                maskingUtil.maskSensitive(value(processed.get("ckycNo"))),
-                value(processed.get("ckycReferenceId")),
+                processed.getStatus(),
+                maskingUtil.maskSensitive(processed.getCkycNo()),
+                processed.getCkycReferenceId(),
                 elapsedMs(startNanos)
         );
         return ApiResponse.of(requestId, "SUCCESS", "CKYC record fetched successfully", data);
     }
 
     @Override
-    public ApiResponse<Map<String, Object>> validateOtp(CkycValidateOtpRequest request) {
+    public ApiResponse<CkycApiResponsePayload> validateOtp(CkycValidateOtpRequest request) {
         long startNanos = System.nanoTime();
         fieldValidationUtil.validateValidateOtpRequest(request);
         String requestId = normalize(request.getRequestId());
@@ -110,13 +111,14 @@ public class DownloadServiceImpl implements DownloadService {
                 OPERATION_VALIDATE_OTP
         );
 
-        Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_VALIDATE_OTP);
-        String error = normalize((String) processed.get("error"));
+        CkycResponseDto processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_VALIDATE_OTP);
+        String error = normalize(processed.getError());
         if (isOtpResent(error + " " + rawResponse)) {
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("requestXml", signedRequest);
-            data.put("rawResponseXml", rawResponse);
-            data.putAll(processed);
+            CkycApiResponsePayload data = CkycApiResponsePayload.builder()
+                    .requestXml(signedRequest)
+                    .rawResponseXml(rawResponse)
+                    .response(processed)
+                    .build();
             auditService.record(OPERATION_VALIDATE_OTP, requestId, "OTP_SENT", error);
             log.info(
                     "CKYC validate-otp resend-success requestId={} elapsedMs={} message={}",
@@ -130,25 +132,26 @@ public class DownloadServiceImpl implements DownloadService {
             log.error(
                     "CKYC validate-otp failed requestId={} errorCode={} elapsedMs={} error={}",
                     requestId,
-                    processed.get("errorCode"),
+                    processed.getErrorCode(),
                     elapsedMs(startNanos),
                     maskingUtil.maskSensitive(error)
             );
             throw new CkycValidationException(error);
         }
 
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("requestXml", signedRequest);
-        data.put("rawResponseXml", rawResponse);
-        data.putAll(processed);
+        CkycApiResponsePayload data = CkycApiResponsePayload.builder()
+                .requestXml(signedRequest)
+                .rawResponseXml(rawResponse)
+                .response(processed)
+                .build();
 
         auditService.record(OPERATION_VALIDATE_OTP, requestId, "SUCCESS", "otp validated");
         log.info(
                 "CKYC validate-otp completed requestId={} status={} ckycNo={} referenceId={} elapsedMs={}",
                 requestId,
-                processed.get("status"),
-                maskingUtil.maskSensitive(value(processed.get("ckycNo"))),
-                value(processed.get("ckycReferenceId")),
+                processed.getStatus(),
+                maskingUtil.maskSensitive(processed.getCkycNo()),
+                processed.getCkycReferenceId(),
                 elapsedMs(startNanos)
         );
         return ApiResponse.of(requestId, "SUCCESS", "OTP validated and CKYC record fetched successfully", data);
@@ -185,7 +188,4 @@ public class DownloadServiceImpl implements DownloadService {
         return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 
-    private String value(Object input) {
-        return input == null ? null : input.toString();
-    }
 }

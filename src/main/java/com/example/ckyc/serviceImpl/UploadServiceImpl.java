@@ -1,6 +1,8 @@
 package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.config.CkycProperties;
+import com.example.ckyc.dto.CkycApiResponsePayload;
+import com.example.ckyc.dto.CkycResponseDto;
 import com.example.ckyc.dto.CkycUploadRequest;
 import com.example.ckyc.exception.CkycValidationException;
 import com.example.ckyc.model.ApiResponse;
@@ -15,9 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.Locale;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -39,7 +39,7 @@ public class UploadServiceImpl implements UploadService {
     private final MaskingUtil maskingUtil;
 
     @Override
-    public ApiResponse<Map<String, Object>> upload(CkycUploadRequest request) {
+    public ApiResponse<CkycApiResponsePayload> upload(CkycUploadRequest request) {
         long startNanos = System.nanoTime();
         if (!ckycProperties.isAllowNonStandardUploadUpdateApi()) {
             throw new CkycValidationException(
@@ -65,13 +65,14 @@ public class UploadServiceImpl implements UploadService {
         String signedRequest = ckycEnvelopeService.encryptAndSign(OPERATION_UPLOAD, requestId, pidData);
         String rawResponse = ckycApiClient.postXml(ckycProperties.getUploadUrl(), signedRequest, requestId, OPERATION_UPLOAD);
 
-        Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_UPLOAD);
-        String error = (String) processed.get("error");
+        CkycResponseDto processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_UPLOAD);
+        String error = processed.getError();
 
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("requestXml", signedRequest);
-        data.put("rawResponseXml", rawResponse);
-        data.putAll(processed);
+        CkycApiResponsePayload data = CkycApiResponsePayload.builder()
+                .requestXml(signedRequest)
+                .rawResponseXml(rawResponse)
+                .response(processed)
+                .build();
 
         if (error != null && !error.isBlank()) {
             if (isDuplicate(error)) {
@@ -79,7 +80,7 @@ public class UploadServiceImpl implements UploadService {
                 log.warn(
                         "CKYC upload duplicate requestId={} errorCode={} elapsedMs={} error={}",
                         requestId,
-                        processed.get("errorCode"),
+                        processed.getErrorCode(),
                         elapsedMs(startNanos),
                         maskingUtil.maskSensitive(error)
                 );
@@ -88,7 +89,7 @@ public class UploadServiceImpl implements UploadService {
             log.error(
                     "CKYC upload failed requestId={} errorCode={} elapsedMs={} error={}",
                     requestId,
-                    processed.get("errorCode"),
+                    processed.getErrorCode(),
                     elapsedMs(startNanos),
                     maskingUtil.maskSensitive(error)
             );
@@ -99,9 +100,9 @@ public class UploadServiceImpl implements UploadService {
         log.info(
                 "CKYC upload completed requestId={} status={} ckycNo={} referenceId={} elapsedMs={}",
                 requestId,
-                processed.get("status"),
-                maskingUtil.maskSensitive(value(processed.get("ckycNo"))),
-                value(processed.get("ckycReferenceId")),
+                processed.getStatus(),
+                maskingUtil.maskSensitive(processed.getCkycNo()),
+                processed.getCkycReferenceId(),
                 elapsedMs(startNanos)
         );
         return ApiResponse.of(requestId, "SUCCESS", "CKYC upload completed successfully", data);
@@ -120,7 +121,4 @@ public class UploadServiceImpl implements UploadService {
         return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 
-    private String value(Object input) {
-        return input == null ? null : input.toString();
-    }
 }

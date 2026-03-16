@@ -3,17 +3,13 @@ package com.example.ckyc.serviceImpl;
 import com.example.ckyc.config.CkycProperties;
 import com.example.ckyc.exception.CkycEncryptionException;
 import com.example.ckyc.exception.CkycSignatureException;
-import com.example.ckyc.util.CryptoUtil;
-import com.example.ckyc.util.KeyLoaderUtil;
-import com.example.ckyc.util.XmlHelper;
-import com.example.ckyc.util.XmlUtil;
+import com.example.ckyc.util.CkycEncrypter;
+import com.example.ckyc.util.DigitalSigner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -50,10 +46,19 @@ public class CkycEnvelopeService {
         String encryptedPid;
         String encryptedSessionKey;
         try {
-            sessionKey = CryptoUtil.generateSessionKey();
-            encryptedPid = CryptoUtil.encryptAES(pidData, sessionKey);
-            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(resolveCkycPublicCertPath());
-            encryptedSessionKey = CryptoUtil.encryptRSA(sessionKey, cersaiPublicKey);
+            CkycEncrypter encrypter = new CkycEncrypter(resolveCkycPublicCertPath());
+            sessionKey = encrypter.generateSessionKey();
+            byte[] encryptedPidBytes = encrypter.encryptUsingSessionKey(
+                    sessionKey,
+                    pidData.getBytes(StandardCharsets.UTF_8)
+            );
+            encryptedPid = Base64.encodeBase64String(encryptedPidBytes);
+
+            byte[] encryptedSessionKeyBytes = encrypter.encryptUsingPublicKey(
+                    sessionKey,
+                    ckycProperties.getVersion()
+            );
+            encryptedSessionKey = Base64.encodeBase64String(encryptedSessionKeyBytes);
         } catch (Exception ex) {
             throw new CkycEncryptionException("Failed to encrypt CKYC request payload", ex);
         }
@@ -61,12 +66,8 @@ public class CkycEnvelopeService {
         String unsignedXml = envelopeBuilder.build(encryptedPid, encryptedSessionKey);
 
         try {
-            PrivateKey privateKey = loadProjectPrivateKey();
-            X509Certificate cert = loadProjectCertificate();
-
-            Document document = XmlHelper.parse(unsignedXml);
-            XmlUtil.signXml(document, privateKey, cert);
-            return XmlHelper.toString(document);
+            DigitalSigner signer = buildSigner();
+            return signer.signXML(unsignedXml, true, ckycProperties.getVersion());
         } catch (Exception ex) {
             throw new CkycSignatureException("Failed to sign CKYC request payload", ex);
         }
@@ -78,25 +79,20 @@ public class CkycEnvelopeService {
                 : ckycProperties.getCersaiCert();
     }
 
-    private PrivateKey loadProjectPrivateKey() throws Exception {
-        if (hasText(ckycProperties.getProjectPrivateKeyPath())) {
-            return KeyLoaderUtil.loadPrivateKeyFromPem(ckycProperties.getProjectPrivateKeyPath());
+    private DigitalSigner buildSigner() {
+        if (!hasText(ckycProperties.getP12Path()) || !hasText(ckycProperties.getP12Password())) {
+            throw new CkycSignatureException("PKCS12 path/password not configured for CKYC signing");
         }
-        return KeyLoaderUtil.loadPrivateKeyFromPKCS12(
-                ckycProperties.getP12Path(),
-                ckycProperties.getP12Password(),
-                ckycProperties.getP12Alias()
-        );
-    }
-
-    private X509Certificate loadProjectCertificate() throws Exception {
-        if (hasText(ckycProperties.getProjectPublicKeyPath())) {
-            return KeyLoaderUtil.loadCertificateFromCer(ckycProperties.getProjectPublicKeyPath());
+        if (hasText(ckycProperties.getP12Alias())) {
+            return new DigitalSigner(
+                    ckycProperties.getP12Path(),
+                    ckycProperties.getP12Password().toCharArray(),
+                    ckycProperties.getP12Alias()
+            );
         }
-        return KeyLoaderUtil.loadCertificateFromPKCS12(
+        return new DigitalSigner(
                 ckycProperties.getP12Path(),
-                ckycProperties.getP12Password(),
-                ckycProperties.getP12Alias()
+                ckycProperties.getP12Password().toCharArray()
         );
     }
 

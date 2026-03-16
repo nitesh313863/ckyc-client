@@ -1,5 +1,6 @@
 package com.example.ckyc.service;
 
+import com.example.ckyc.dto.CkycApiResponsePayload;
 import com.example.ckyc.dto.CkycDownloadRequest;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.dto.CkycUpdateResponseDto;
@@ -9,16 +10,14 @@ import com.example.ckyc.model.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 
-import java.util.Map;
-
 public interface CkycControllerService {
-    Map<String, Object> search(String idType, String idNo);
+    CkycApiResponsePayload search(String idType, String idNo);
 
-    ApiResponse<Map<String, Object>> download(CkycDownloadRequest request);
+    ApiResponse<CkycApiResponsePayload> download(CkycDownloadRequest request);
 
-    ApiResponse<Map<String, Object>> validateOtp(CkycValidateOtpRequest request);
+    ApiResponse<CkycApiResponsePayload> validateOtp(CkycValidateOtpRequest request);
 
-    ApiResponse<Map<String, Object>> upload(CkycUploadRequest request);
+    ApiResponse<CkycApiResponsePayload> upload(CkycUploadRequest request);
 
     ResponseEntity<CkycUpdateResponseDto> update(CkycUpdateRequestDto request, BindingResult bindingResult);
 }

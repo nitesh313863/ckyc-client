@@ -1,36 +1,32 @@
 package com.example.ckyc.serviceImpl;
 
 import com.example.ckyc.config.CkycProperties;
+import com.example.ckyc.dto.CkycResponseDto;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.dto.CkycUpdateResponseDto;
 import com.example.ckyc.exception.CkycEncryptionException;
 import com.example.ckyc.exception.CkycSignatureException;
 import com.example.ckyc.exception.CkycUpstreamException;
 import com.example.ckyc.exception.CkycValidationException;
-import com.example.ckyc.util.CryptoUtil;
+import com.example.ckyc.util.CkycEncrypter;
+import com.example.ckyc.util.DigitalSigner;
 import com.example.ckyc.util.ImageMapperUtil;
 import com.example.ckyc.util.ImageValidationUtil;
-import com.example.ckyc.util.KeyLoaderUtil;
 import com.example.ckyc.util.MaskingUtil;
 import com.example.ckyc.util.RequestIdGenerator;
 import com.example.ckyc.util.FieldValidationUtil;
-import com.example.ckyc.util.XmlHelper;
-import com.example.ckyc.util.XmlUtil;
 import com.example.ckyc.service.UpdateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Base64;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -75,11 +71,11 @@ public class UpdateServiceImpl implements UpdateService {
         String signedXml = buildSignedRequestXml(requestId, pidData);
         String rawResponse = ckycApiClient.postXml(ckycProperties.getUpdateUrl(), signedXml, requestId, OPERATION_UPDATE);
 
-        Map<String, Object> processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_UPDATE);
-        String error = firstNonBlank(value(processed.get("errorDesc")), value(processed.get("error")));
-        String errorCode = value(processed.get("errorCode"));
-        String responseStatus = value(processed.get("status"));
-        String responseCkycNo = firstNonBlank(value(processed.get("ckycNo")), request.getCkycNo());
+        CkycResponseDto processed = ckycResponseService.processResponse(rawResponse, requestId, OPERATION_UPDATE);
+        String error = firstNonBlank(processed.getErrorDesc(), processed.getError());
+        String errorCode = processed.getErrorCode();
+        String responseStatus = processed.getStatus();
+        String responseCkycNo = firstNonBlank(processed.getCkycNo(), request.getCkycNo());
 
         if (isDuplicate(error, errorCode)) {
             auditService.record(OPERATION_UPDATE, requestId, "DUPLICATE", error);
@@ -108,10 +104,10 @@ public class UpdateServiceImpl implements UpdateService {
                     "CKYC update failed requestId={} ckycNo={} status={} errorCode={} elapsedMs={} error={}",
                     requestId,
                     maskingUtil.maskSensitive(responseCkycNo),
-                    responseStatus,
-                    errorCode,
-                    elapsedMs(startNanos),
-                    maskingUtil.maskSensitive(upstreamMessage)
+                responseStatus,
+                errorCode,
+                elapsedMs(startNanos),
+                maskingUtil.maskSensitive(upstreamMessage)
             );
             throw new CkycUpstreamException(upstreamMessage, 502, false, rawResponse);
         }
@@ -137,11 +133,19 @@ public class UpdateServiceImpl implements UpdateService {
     private String buildSignedRequestXml(String requestId, String pidData) {
         String unsignedXml;
         try {
-            byte[] sessionKey = CryptoUtil.generateSessionKey();
-            String encryptedPid = CryptoUtil.encryptAES(pidData, sessionKey);
+            CkycEncrypter encrypter = new CkycEncrypter(resolveCkycPublicCertPath());
+            byte[] sessionKey = encrypter.generateSessionKey();
+            byte[] encryptedPidBytes = encrypter.encryptUsingSessionKey(
+                    sessionKey,
+                    pidData.getBytes(StandardCharsets.UTF_8)
+            );
+            String encryptedPid = Base64.encodeBase64String(encryptedPidBytes);
 
-            PublicKey cersaiPublicKey = KeyLoaderUtil.loadPublicKeyFromCer(resolveCkycPublicCertPath());
-            String encryptedSessionKey = CryptoUtil.encryptRSA(sessionKey, cersaiPublicKey);
+            byte[] encryptedSessionKeyBytes = encrypter.encryptUsingPublicKey(
+                    sessionKey,
+                    ckycProperties.getVersion()
+            );
+            String encryptedSessionKey = Base64.encodeBase64String(encryptedSessionKeyBytes);
 
             unsignedXml = updateXmlBuilder.buildUnsignedRequest(
                     ckycProperties.getFiCode(),
@@ -155,11 +159,8 @@ public class UpdateServiceImpl implements UpdateService {
         }
 
         try {
-            PrivateKey privateKey = loadProjectPrivateKey();
-            X509Certificate cert = loadProjectCertificate();
-            Document document = XmlHelper.parse(unsignedXml);
-            XmlUtil.signXml(document, privateKey, cert);
-            return XmlHelper.toString(document);
+            DigitalSigner signer = buildSigner();
+            return signer.signXML(unsignedXml, true, ckycProperties.getVersion());
         } catch (Exception ex) {
             throw new CkycSignatureException("Failed to sign CKYC update request", ex);
         }
@@ -203,10 +204,6 @@ public class UpdateServiceImpl implements UpdateService {
         return msg.contains("DUPLICATE") || msg.contains("ALREADY EXISTS") || code.contains("DUPLICATE");
     }
 
-    private String value(Object input) {
-        return input == null ? null : input.toString();
-    }
-
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.isBlank()) {
             return first;
@@ -232,25 +229,20 @@ public class UpdateServiceImpl implements UpdateService {
                 : ckycProperties.getCersaiCert();
     }
 
-    private PrivateKey loadProjectPrivateKey() throws Exception {
-        if (hasText(ckycProperties.getProjectPrivateKeyPath())) {
-            return KeyLoaderUtil.loadPrivateKeyFromPem(ckycProperties.getProjectPrivateKeyPath());
+    private DigitalSigner buildSigner() {
+        if (!hasText(ckycProperties.getP12Path()) || !hasText(ckycProperties.getP12Password())) {
+            throw new CkycSignatureException("PKCS12 path/password not configured for CKYC signing");
         }
-        return KeyLoaderUtil.loadPrivateKeyFromPKCS12(
-                ckycProperties.getP12Path(),
-                ckycProperties.getP12Password(),
-                ckycProperties.getP12Alias()
-        );
-    }
-
-    private X509Certificate loadProjectCertificate() throws Exception {
-        if (hasText(ckycProperties.getProjectPublicKeyPath())) {
-            return KeyLoaderUtil.loadCertificateFromCer(ckycProperties.getProjectPublicKeyPath());
+        if (hasText(ckycProperties.getP12Alias())) {
+            return new DigitalSigner(
+                    ckycProperties.getP12Path(),
+                    ckycProperties.getP12Password().toCharArray(),
+                    ckycProperties.getP12Alias()
+            );
         }
-        return KeyLoaderUtil.loadCertificateFromPKCS12(
+        return new DigitalSigner(
                 ckycProperties.getP12Path(),
-                ckycProperties.getP12Password(),
-                ckycProperties.getP12Alias()
+                ckycProperties.getP12Password().toCharArray()
         );
     }
 

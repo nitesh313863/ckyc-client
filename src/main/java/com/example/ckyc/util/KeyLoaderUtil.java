@@ -26,7 +26,8 @@ public class KeyLoaderUtil {
         try (InputStream is = open(path)) {
             ks.load(is, password.toCharArray());
         }
-        return (PrivateKey) ks.getKey(alias, password.toCharArray());
+        String resolvedAlias = resolveAlias(ks, alias);
+        return (PrivateKey) ks.getKey(resolvedAlias, password.toCharArray());
     }
 
     public static PrivateKey loadPrivateKeyFromPem(String path) throws Exception {
@@ -50,7 +51,8 @@ public class KeyLoaderUtil {
         try (InputStream is = open(path)) {
             ks.load(is, password.toCharArray());
         }
-        return (X509Certificate) ks.getCertificate(alias);
+        String resolvedAlias = resolveAlias(ks, alias);
+        return (X509Certificate) ks.getCertificate(resolvedAlias);
     }
 
     public static X509Certificate loadCertificateFromCer(String path) throws Exception {
@@ -92,5 +94,19 @@ public class KeyLoaderUtil {
         }
 
         return new FileInputStream(normalized);
+    }
+
+    private static String resolveAlias(KeyStore keyStore, String alias) throws Exception {
+        if (alias != null && !alias.isBlank()) {
+            return alias;
+        }
+        if (keyStore.size() != 1) {
+            throw new IllegalArgumentException("Keystore contains multiple entries; alias must be provided");
+        }
+        java.util.Enumeration<String> aliases = keyStore.aliases();
+        if (!aliases.hasMoreElements()) {
+            throw new IllegalArgumentException("Keystore is empty");
+        }
+        return aliases.nextElement();
     }
 }

@@ -1,5 +1,6 @@
 package com.example.ckyc.controller;
 
+import com.example.ckyc.dto.CkycApiResponsePayload;
 import com.example.ckyc.dto.CkycDownloadRequest;
 import com.example.ckyc.dto.CkycUpdateRequestDto;
 import com.example.ckyc.dto.CkycUpdateResponseDto;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/ckyc")
 @RequiredArgsConstructor
@@ -27,25 +26,25 @@ public class CkycController {
     private final CkycControllerService ckycControllerService;
 
     @PostMapping("/search")
-    public ResponseEntity<Map<String, Object>> search(@RequestParam String idType,
-                                                      @RequestParam String idNo) {
+    public ResponseEntity<CkycApiResponsePayload> search(@RequestParam String idType,
+                                                         @RequestParam String idNo) {
         return ResponseEntity.ok(ckycControllerService.search(idType, idNo));
     }
 
     @PostMapping("/download")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> download(@Valid @RequestBody CkycDownloadRequest request) {
+    public ResponseEntity<ApiResponse<CkycApiResponsePayload>> download(@Valid @RequestBody CkycDownloadRequest request) {
         return ResponseEntity.ok(ckycControllerService.download(request));
     }
 
     @PostMapping("/validate-otp")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> validateOtp(
+    public ResponseEntity<ApiResponse<CkycApiResponsePayload>> validateOtp(
             @Valid @RequestBody CkycValidateOtpRequest request
     ) {
         return ResponseEntity.ok(ckycControllerService.validateOtp(request));
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> upload(@Valid @RequestBody CkycUploadRequest request) {
+    public ResponseEntity<ApiResponse<CkycApiResponsePayload>> upload(@Valid @RequestBody CkycUploadRequest request) {
         return ResponseEntity.ok(ckycControllerService.upload(request));
     }
 

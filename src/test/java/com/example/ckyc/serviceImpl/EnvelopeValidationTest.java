@@ -4,6 +4,7 @@ import com.example.ckyc.exception.CkycValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EnvelopeValidationTest {
@@ -23,5 +24,12 @@ class EnvelopeValidationTest {
         assertDoesNotThrow(
                 () -> xmlBuilderService.buildEnvelope("FI01", "00000001", "1.3", "CKYC_UPDATE", "pid", "key")
         );
+    }
+
+    @Test
+    void buildDownloadEnvelope_shouldUseDownloadRootTag() {
+        String xml = xmlBuilderService.buildDownloadEnvelope("FI01", "00000001", "1.3", "pid", "key");
+        assertTrue(xml.startsWith("<CKYC_DOWNLOAD_REQUEST>"));
+        assertTrue(xml.contains("<CKYC_INQ>"));
     }
 }

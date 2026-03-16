@@ -1,0 +1,235 @@
+ 
+Non-Confidential  Steps to follow for encrypting, encoding and signing the search and download API 
+request  
+Whenever a new FI is registered, FI user should login and upload public key in CKYC 
+application from User Master -> Upload Public Key page [Extract public key information 
+from FIs private key and upload the same in CKYC upload public key page] This public 
+key uploaded by FI will be validated and verified in step 10.  
+The above public key uploaded by user should be in .cer format and IP address from 
+which user is going to hit API request needs to be selected. This public key will be stored 
+in CKYC application in the below format.  
+                                                   Ex: FICODE_pub.cer  
+User should download CKYC public key from CKYC portal and should use the 
+downloaded key during request encryption.  
+The below are the steps to sign the API request:  
+Sample: - Actual request received from consumer.  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<ID_NO>D4567890</ID_NO>  
+<ID_TYPE>A</ID_TYPE>  
+</PID_DATA>  
+1) Generate the current date timestamp and convert it to required format using java.util 
+library.  
+            DateTimestamp:20 -05-2021 17:15:57  
+2) Add this date timestamp in DATE_TIME tag of PID_DATA tag.  
+Data:  
+<?xml version="1.0" encoding="UTF -8" standalone="yes"?>  
+<PID_DATA>  
+<DATE_TIME>20 -05-2021 17:15:57</DATE_TIME>  
+<ID_NO>D4567890</ID_NO>  
+<ID_TYPE>A</ID_TYPE>  
+</PID_DATA>  
+
+ 
+Non-Confidential  3) Generate a random 256 -bit session key with AES and BC (Bouncy castle) algorithm 
+using javax.crypto.KeyGenerator library  
+Session key in bytes:[B@663c9e7a  
+4) Encrypt the Data(bytes) using the session key by AES Symmetric algorithm - Used 
+org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher Cipher library  
+Encrypted PID in bytes: [B@606e4010  
+5) Encode the encrypted PID to Base64 string using org.apache.commons.codec.binary 
+library  
+Encoded PID: 
+h5NbEOYPgJEKhhSmRpWIF58EWJgBCL5YlJYEZF1b4sbtHmhOaW4bAeX96wVq9cSdj9G
+HPtDo7rTmL+5YhbVduxS0/rmOHgA5mGjRvu+oZlEzD2QxPUHeKyzOgdjR6mTUP/igXiEe7
+dAwbep9h9YKQhxCmpXkWMx7VhRB+R0VkSGe5p1YctJD4copxPScHdLHROdE2YIZysSv
+n8/zJy87a5f8I/yz1UIRLrKmLancHQc=  
+6) If version is 1.2,  
+Encrypt the session key using public key provided by cersai  using RSA Asymmetric 
+algorithm - Request should be encrypted with RSA/NONE/OAEPWithSHA 1AndMGF1  
+Padding algorithm and javax.crypto.Cipher library  
+If version is 1.3,  
+Encrypt the session key using public key provided by cersai using RSA Asymmetric 
+algorithm - Request should be encrypted with RSA/NONE/OAEPWithSHA256AndMGF1 
+Padding algorithm and javax.crypto.Cipher library  
+V1.0 or V1.1 is no longer supported.  
+Encrypted SessionKey in bytes:[B@21d03963  
+7) Encode the encrypted SessionKey to Base64 string using 
+org.apache.commons.codec.binary library.  
+Encoded Session Key:  
+KnPPKUTjPolQ6qEWAUE4gRiz6aomJNwzUUiMFtYDJ4Q9VUuLFRMGK6eIruC2VltSDrms
+Eg4zBziZnE9GmeBbGRPqLYzn2tYus+gx1TmbisxRqUCl6jt2uyJspR4+k38MeWQYsfPOtv6
+VM3N2uOOhewMaQ35qBK8kKn8EuzKP4ouNYTdXxvJgmCfrwRPrHZ621wkip910dISpAH
+jJQNHwL/tDEY+YMKcWMnO1CupjKBB8uIiED0pVE4W0eULfmSPE FMuCPedwuiwoQQ8t
+wj3pqCUYJ4NisAvwoCkRUHPbSdkwcaCfvSbzCY4vE4v21RB3KT6MPYeWa7rC3sDOQLz
+a0w==  
+8) Add this encrypted and encoded "PID Data" and "Session Key" to the request XML.  
+
+ 
+Non-Confidential  <?xml version="1.0" encoding="UTF -8"?><REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN1895</FI_CODE>  
+<REQUEST_ID>02</REQUEST_ID>  
+<VERSION>1.2</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+<PID>h5NbEOYPgJEKhhSmRpWIF58EWJgBCL5YlJYEZF1b4sbtHmhOaW4bAeX96wVq9c
+Sdj9GHPtDo7rTmL+5YhbVduxS0/rmOHgA5mGjRvu+oZlEzD2QxPUHeKyzOgdjR6mTUP/i
+gXiEe7dAwbep9h9YKQhxCmpXkWMx7VhRB+R0VkSGe5p1YctJD4copxPScHdLHROdE2
+YIZysSvn8/zJy87a5f8I/yz1UIRLrKmLancHQc=</PID>  
+<SESSION_KEY>KnPPKUTjPolQ6qEWAUE4gRiz6aomJNwzUUiMFtYDJ4Q9VUuLFRMGK6
+eIruC2VltSDrmsEg4zBziZnE9GmeBbGRPqLYzn2tYus+gx1TmbisxRqUCl6jt2uyJspR4+k38
+MeWQYsfPOtv6VM3N2uOOhewMaQ35qBK8kKn8EuzKP4ouNYTdXxvJgmCfrwRPrHZ621
+wkip910dISpAHjJQNHwL/tDEY+YMKcWMnO1CupjKBB8uIiED0p VE4W0eULfmSPEFMuC
+PedwuiwoQQ8twj3pqCUYJ4NisAvwoCkRUHPbSdkwcaCfvSbzCY4vE4v21RB3KT6MPYe
+Wa7rC3sDOQLza0w==</SESSION_KEY>  
+</CKYC_INQ>  
+</REQ_ROOT>  
+9) Sign the above request using FI's private key [Use class2 or class3 certificate, self -
+signed certificate is not accepted. This private key and the key which was used to 
+upload public key in CKYC upload public key page should be same]  
+First convert the request XML which is in string to document using 
+javax.xml.parsers.DocumentBuilderFactory and org.w3c.dom.Document libraries  
+Get the private key details using java.security.KeyStore.PrivateKeyEntry library  
+Example:  
+Subject: CN=DS TATA CAPITAL FINANCE SERVICES LIMITED 1, OID.2.5.4.51=11TH 
+FLOOR TOWER A  
+PENINSULA BUSINESS PARK SENAPATI BAPAT MARG TOWER PAREL WEST, 
+STREET=MUMBAI,  
+ST=MAHARASHTRA, OID.2.5.4.17=400013, OU=LEGAL AND COMPLIANCE, O=TATA 
+CAPITAL FINANCE  
+
+ 
+Non-Confidential  SERVICES LIMITED, C=IN  
+Signature Algorithm: SHA256withRSA, OID = 1.2.840.113549.1.1.11  
+Key: Sun RSA public key, 2048 bits  
+modulus:  
+2555472365872103366976660303167610275331545311918299946952221985239688
+8031213442606922695145537145349222788712357359923953068301886656727177
+3704336402205362242246589593277084474619755027677787382712635367791669
+1451022840913523151714345918483129055312964461 715805176323609061104626
+4419804148175071840621426596234081696948290073940327832428380924190107
+0758526811004352266831357133277327995415051970641423285261182792344170
+4835113156112535823592288698369198111559289920489113873115410554884094
+8808937787043179252509 809103950944136625895309875111355737604939779022
+413795679065675534504849655630200701809494510260453053873  
+public exponent: 65537  
+Validity: [From: Thu Jul 18 12:24:45 IST 2019,  
+To: Sat Jul 17 12:24:45 IST 2022]  
+Issuer: CN=e -Mudhra Sub CA Class 2 for Document Signer 2014, OU=Certifying 
+Authority, O=eMudhra  
+Consumer Services Limited, C=IN  
+SerialNumber: [ 01067999]  
+Sign the document with the key using javax.xml.crypto.dsig.XMLSignatureFactory, 
+javax.xml.crypto.dsig.SignedInfo and javax.xml.crypto.dsig.XMLSignature libraries.  
+Convert the document back to the string.  
+Below is the sample output after signing the request XML V1.2  
+<?xml version="1.0" encoding="UTF -8" standalone="no"?><REQ_ROOT>  
+<HEADER>  
+<FI_CODE>IN1895</FI_CODE>  
+<REQUEST_ID>02</REQUEST_ID>  
+<VERSION>1.2</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+
+ 
+Non-Confidential  <PID>h5NbEOYPgJEKhhSmRpWIF58EWJgBCL5YlJYEZF1b4sbtHmhOaW4bAeX96wVq9c
+Sdj9GHPtDo7rTmL+5YhbVduxS0/rmOHgA5mGjRvu+oZlEzD2QxPUHeKyzOgdjR6mTUP/i
+gXiEe7dAwbep9h9YKQhxCmpXkWMx7VhRB+R0VkSGe5p1YctJD4copxPScHdLHROdE2
+YIZysSvn8/zJy87a5f8I/yz1UIRLrKmLancHQc=</PID>  
+<SESSION_KEY>KnPPKUTjPolQ6qEWAUE4gRiz6aomJNwzUUiMFtYDJ4Q9VUuLFRMGK6
+eIruC2VltSDrmsEg4zBziZnE9GmeBbGRPqLYzn2tYus+gx1TmbisxRqUCl6jt2uyJspR4+k38
+MeWQYsfPOtv6VM3N2uOOhewMaQ35qBK8kKn8EuzKP4ouNYTdXxvJgmCfrwRPrHZ621
+wkip910dISpAHjJQNHwL/tDEY+YMKcWMnO1CupjKBB8uIiED0p VE4W0eULfmSPEFMuC
+PedwuiwoQQ8twj3pqCUYJ4NisAvwoCkRUHPbSdkwcaCfvSbzCY4vE4v21RB3KT6MPYe
+Wa7rC3sDOQLza0w==</SESSION_KEY>  
+</CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod  
+Algorithm="http://www.w3.org/TR/2001/REC -xml-c14n-20010315"/><SignatureMethod  
+Algorithm=" http://www.w3.org/2000/09/xmldsig#rsa -sha1"/><Reference  
+URI=""><Transforms><Transform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#envelopedsignature"/></Transforms>
+<DigestMethod  
+Algorithm=" http://www.w3.org/2000/09/xmldsig#sha1 "/><DigestValue>xTMdnPXRctasX
+p0ULxT/QzOfp  
+90=</DigestValue></Reference></SignedInfo><SignatureValue>jqGYE7V5QcwWFzuLi3
+E5XZaB/LgYK5Km  
+RU0Hy7T0sszo4UcS6NeetH36Iez/PnW9N2tYyKyfvBxY4FuIywOzwdeFjXTizaItYsIfBKBPev
+Bq7u8lc44DkrwT  
+G7gJ06UqkkXzeoxje54bdlPSbl9adXeH5AIM2geh3WB/snrus7ZyZCSAng9H6LrY7F3AJJCe
+55S/HpBxmgCran  
+93vYu2FpBJ4iK3rkxuJwwMWcwD7CG2tWxMr66UyOzTSirhs8995ceByzQHp2LiBnghFIm
+ytyR4PryIcG1lDJC  
+/tYgAe3ZdVZZ4TvX6tjKRWOZiGBwdHQXQcEFCotDxtVbVYqyKVA==</SignatureValue></
+Signature></REQ_ROOT>  
+ 
+Below is the sample output after signing the request XML  V1.3  
+<?xml version="1.0" encoding="UTF -8" standalone="no"?><REQ_ROOT>  
+
+ 
+Non-Confidential  <HEADER>  
+<FI_CODE>IN1895</FI_CODE>  
+<REQUEST_ID>02</REQUEST_ID>  
+<VERSION>1.2</VERSION>  
+</HEADER>  
+<CKYC_INQ>  
+<PID>h5NbEOYPgJEKhhSmRpWIF58EWJgBCL5YlJYEZF1b4sbtHmhOaW4bAeX96wVq9c
+Sdj9GHPtDo7rTmL+5YhbVduxS0/rmOHgA5mGjRvu+oZlEzD2QxPUHeKyzOgdjR6mTUP/i
+gXiEe7dAwbep9h9YKQhxCmpXkWMx7VhRB+R0VkSGe5p1YctJD4copxPScHdLHROdE2
+YIZysSvn8/zJy87a5f8I/yz1UIRLrKmLancHQc=</PID>  
+<SESSION_KEY>KnPPKUTjPolQ6qEWAUE4gRiz6aomJNwzUUiMFtYDJ4Q9VUuLFRMGK6
+eIruC2VltSDrmsEg4zBziZnE9GmeBbGRPqLYzn2tYus+gx1TmbisxRqUCl6jt2uyJspR4+k38
+MeWQYsfPOtv6VM3N2uOOhewMaQ35qBK8kKn8EuzKP4ouNYTdXxvJgmCfrwRPrHZ621
+wkip910dISpAHjJQNHwL/tDEY+YMKcWMnO1CupjKBB8uIiED0p VE4W0eULfmSPEFMuC
+PedwuiwoQQ8twj3pqCUYJ4NisAvwoCkRUHPbSdkwcaCfvSbzCY4vE4v21RB3KT6MPYe
+Wa7rC3sDOQLza0w==</SESSION_KEY>  
+</CKYC_INQ>  
+<Signature 
+xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod  
+Algorithm="http://www.w3.org/TR/2001/REC -xml-c14n-20010315"/><SignatureMethod  
+Algorithm=" http://www.w3.org/2001/04/xmldsig -more#rsa -sha256"/><Reference  
+URI=""><Transforms><Transform 
+Algorithm="http://www.w3.org/2000/09/xmldsig#envelopedsignature"/></Transforms>
+<DigestMethod  
+Algorithm=" http://www.w3.org/2001/04/xmlenc#sha256 "/><DigestValue>xTMdnPXRcta
+sXp0ULxT/QzOfp  
+90=</DigestValue></Reference></SignedInfo><SignatureValue>jqGYE7V5QcwWFzuLi3
+E5XZaB/LgYK5Km  
+RU0Hy7T0sszo4UcS6NeetH36Iez/PnW9N2tYyKyfvBxY4FuIywOzwdeFjXTizaItYsIfBKBPev
+Bq7u8lc44DkrwT  
+G7gJ06UqkkXzeoxje54bdlPSbl9adXeH5AIM2geh3WB/snrus7ZyZCSAng9H6LrY7F3AJJCe
+55S/HpBxmgCran  
+
+ 
+Non-Confidential  93vYu2FpBJ4iK3rkxuJwwMWcwD7CG2tWxMr66UyOzTSirhs8995ceByzQHp2LiBnghFIm
+ytyR4PryIcG1lDJC  
+/tYgAe3ZdVZZ4TvX6tjKRWOZiGBwdHQXQcEFCotDxtVbVYqyKVA==</SignatureValue></
+Signature></REQ_ROOT>  
+Note: Separate Signature XML tag should be created like above once the request is 
+signed.  
+10) Verify the signature XML object from the above request using FI's public key [ This 
+key is stored in CKYC server when user uploaded initially from upload public key page]  
+Convert the signature which is in string to document using  
+javax.xml.parsers.DocumentBuilderFactory and org.w3c.dom.Document libraries  
+Get the public keys details using java.security.cert.CertificateFactory and 
+java.security.cert.Certificate libraries  
+Validate the signature which is in document with the public key using 
+javax.xml.crypto.dsig.dom.DOMValidateContext library.  
+ API error messages:  
+1. Public key is not available in the server. Please upload the public key on the CKYC 
+application.  
+2. <<IP Address>>: IP is not registered on CKYCRR portal  
+3. <<IP Address>>: IP does not match with IP registered on CKYCRR portal  
+4. Please enter Institution Code  
+5. Digital signature cannot be verified. The certificate is expired.  
+6. Invalid expiry date in Public Key  
+7. Session Key Decryption error. Please encrypt with correct public key  
+
+ 
+Non-Confidential  
+8. PID Data Decoding error  
+9. Request XML not in proper format:  
+Incorrect framing of xml tags is being sent to CKYC API.  
+10. Digital signature cannot be verified. Please sign the document with proper key  
+11. Your Request Could Not Be Processed. Please try after some time  

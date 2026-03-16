@@ -34,6 +34,36 @@ class FieldValidationUtilTest {
     }
 
     @Test
+    void validateDownloadRequest_shouldFail_forIndividualWithNonMobileAuthFactor() {
+        CkycDownloadRequest request = new CkycDownloadRequest();
+        request.setCkycNo("12345678901234");
+        request.setAuthFactorType(AuthFactorType.DOI);
+        request.setAuthFactor("01-01-2020");
+
+        assertThrows(CkycValidationException.class, () -> fieldValidationUtil.validateDownloadRequest(request));
+    }
+
+    @Test
+    void validateDownloadRequest_shouldPass_forLegalWithDoiAuthFactor() {
+        CkycDownloadRequest request = new CkycDownloadRequest();
+        request.setCkycNo("72345678901234");
+        request.setAuthFactorType(AuthFactorType.DOI);
+        request.setAuthFactor("01-01-2020");
+
+        assertDoesNotThrow(() -> fieldValidationUtil.validateDownloadRequest(request));
+    }
+
+    @Test
+    void validateDownloadRequest_shouldPass_forReferenceIdWithEmailAuthFactor() {
+        CkycDownloadRequest request = new CkycDownloadRequest();
+        request.setCkycNo("INABCD12345678");
+        request.setAuthFactorType(AuthFactorType.EMAIL);
+        request.setAuthFactor("user@example.com");
+
+        assertDoesNotThrow(() -> fieldValidationUtil.validateDownloadRequest(request));
+    }
+
+    @Test
     void validateDownloadRequest_shouldFail_forInvalidCkycNo() {
         CkycDownloadRequest request = new CkycDownloadRequest();
         request.setCkycNo("ABC");
